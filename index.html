@@ -264,6 +264,9 @@
         font-weight: 900;
         line-height: 1.25;
         text-transform: uppercase;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
       }
 
       .jump-button:active {
@@ -1477,6 +1480,10 @@
         window.addEventListener("blur", () => heldDirections.clear());
         actionButton.addEventListener("click", activateAction);
         jumpButton.addEventListener("click", jump);
+        jumpButton.addEventListener("pointerdown", (event) => {
+          event.preventDefault();
+          jump();
+        });
         canvas.addEventListener("pointerdown", () => canvas.focus({ preventScroll: true }));
 
         doorNext.addEventListener("click", () => {
