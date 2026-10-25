@@ -1,0 +1,1513 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#171424">
+    <meta name="description" content="Una pequeña aventura pixel art para explorar una mazmorra y abrir cofres.">
+    <title>La mazmorra del hola</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --ink: #130f1c;
+        --night: #1b1728;
+        --panel: #2d263e;
+        --panel-light: #443957;
+        --line: #77688d;
+        --text: #fff4df;
+        --muted: #c6b9d5;
+        --lime: #c8f36b;
+        --pink: #ff788e;
+        --gold: #ffd66e;
+        --blue: #82dcff;
+        --pixel: "Courier New", Courier, monospace;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        height: 100vh;
+        height: 100svh;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+        color: var(--text);
+        background-color: var(--ink);
+        background-image: radial-gradient(rgba(200, 243, 107, 0.13) 1px, transparent 1px);
+        background-size: 12px 12px;
+        font-family: var(--pixel);
+      }
+
+      button {
+        font: inherit;
+      }
+
+      .game-shell {
+        width: min(1120px, calc(100% - 28px));
+        height: min(820px, calc(100svh - 28px));
+        min-height: 0;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        gap: 12px;
+        padding: 14px;
+        border: 4px solid #08070d;
+        background: var(--night);
+        box-shadow: 0 0 0 2px var(--line), 8px 8px 0 #08070d;
+      }
+
+      .game-header {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 9px 12px;
+        border: 2px solid var(--lime);
+        background: #252035;
+      }
+
+      .title-lockup {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .brand-icon {
+        width: 31px;
+        height: 31px;
+        flex: 0 0 31px;
+        display: grid;
+        place-items: center;
+        border: 2px solid var(--ink);
+        color: var(--ink);
+        background: var(--lime);
+        box-shadow: 2px 2px 0 var(--pink);
+        font-size: 1.2rem;
+        font-weight: 900;
+      }
+
+      .title-copy p {
+        margin: 0;
+      }
+
+      .eyebrow {
+        margin-bottom: 3px !important;
+        color: var(--lime);
+        font-size: 0.57rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        color: var(--text);
+        font-size: clamp(0.9rem, 2vw, 1.15rem);
+        font-weight: 900;
+        letter-spacing: 0.02em;
+        line-height: 1.1;
+        text-transform: uppercase;
+      }
+
+      .hud {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+
+      .hud-badge {
+        padding: 7px 8px;
+        border: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 0.61rem;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .hud-badge strong {
+        color: var(--gold);
+      }
+
+      .game-main {
+        min-height: 0;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 196px;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .screen-frame {
+        position: relative;
+        min-width: 0;
+        overflow: hidden;
+        border: 4px solid #0b0911;
+        background: #282137;
+        box-shadow: 0 0 0 2px var(--line);
+      }
+
+      .screen-frame::after {
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+          to bottom,
+          transparent 0,
+          transparent 3px,
+          rgba(10, 7, 15, 0.09) 4px
+        );
+        content: "";
+        pointer-events: none;
+      }
+
+      #game {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 5 / 3;
+        display: block;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+        touch-action: none;
+      }
+
+      .control-dock {
+        align-self: center;
+        padding: 12px 10px;
+        border: 2px solid var(--line);
+        background: var(--panel);
+      }
+
+      .controls-title {
+        margin: 0 0 11px;
+        color: var(--lime);
+        font-size: 0.64rem;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      .control-stack {
+        display: grid;
+        gap: 8px;
+      }
+
+      .move-controls {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        touch-action: none;
+        user-select: none;
+      }
+
+      .move-button {
+        width: 58px;
+        min-height: 46px;
+        display: grid;
+        place-items: center;
+        padding: 0;
+        border: 2px solid #0c0912;
+        color: var(--text);
+        background: var(--panel-light);
+        box-shadow: inset 0 0 0 1px var(--line), 2px 2px 0 #0c0912;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 900;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      .move-button:active {
+        color: var(--ink);
+        background: var(--lime);
+        box-shadow: inset 0 0 0 1px var(--lime);
+        transform: translate(2px, 2px);
+      }
+
+      .action-button {
+        width: 100%;
+        min-height: 48px;
+        padding: 8px 6px;
+        border: 2px solid #0c0912;
+        color: var(--ink);
+        background: var(--pink);
+        box-shadow: 3px 3px 0 #0c0912;
+        cursor: pointer;
+        font-size: 0.63rem;
+        font-weight: 900;
+        line-height: 1.25;
+        text-transform: uppercase;
+      }
+
+      .jump-button {
+        width: 100%;
+        min-height: 42px;
+        padding: 7px 6px;
+        border: 2px solid #0c0912;
+        color: var(--ink);
+        background: var(--blue);
+        box-shadow: 3px 3px 0 #0c0912;
+        cursor: pointer;
+        font-size: 0.62rem;
+        font-weight: 900;
+        line-height: 1.25;
+        text-transform: uppercase;
+      }
+
+      .jump-button:active {
+        background: var(--gold);
+        transform: translate(2px, 2px);
+      }
+
+      .action-button:hover,
+      .action-button:focus-visible {
+        background: var(--gold);
+      }
+
+      .control-help {
+        margin: 11px 0 0;
+        color: var(--muted);
+        font-size: 0.55rem;
+        line-height: 1.55;
+        text-align: center;
+      }
+
+      .game-footer {
+        min-height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 7px 10px;
+        border: 1px solid var(--line);
+        background: #211c30;
+      }
+
+      .game-hint {
+        margin: 0;
+        color: var(--gold);
+        font-size: 0.64rem;
+        font-weight: 700;
+        line-height: 1.4;
+      }
+
+      .keyboard-hint {
+        flex: 0 0 auto;
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.57rem;
+        text-align: right;
+      }
+
+      .pixel-dialog {
+        width: min(430px, calc(100vw - 28px));
+        padding: 18px;
+        border: 4px solid var(--lime);
+        color: var(--text);
+        background: var(--panel);
+        box-shadow: 0 0 0 3px var(--ink), 7px 7px 0 var(--pink);
+        text-align: center;
+      }
+
+      .pixel-dialog::backdrop {
+        background: rgba(10, 8, 16, 0.78);
+        backdrop-filter: blur(3px);
+      }
+
+      .treasure-icon {
+        width: 42px;
+        height: 36px;
+        display: grid;
+        place-items: center;
+        margin: 0 auto 9px;
+        border: 2px solid var(--ink);
+        color: var(--ink);
+        background: var(--gold);
+        box-shadow: 3px 3px 0 var(--ink);
+        font-size: 1.25rem;
+      }
+
+      .door-dialog {
+        width: min(500px, calc(100vw - 28px));
+        text-align: left;
+      }
+
+      .door-progress {
+        margin: 0 0 8px;
+        color: var(--gold);
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+      }
+
+      .door-question-title,
+      .door-complete h2 {
+        margin: 0 0 12px;
+        color: var(--text);
+        font-size: 0.83rem;
+        line-height: 1.5;
+        text-transform: uppercase;
+      }
+
+      .door-answers {
+        display: grid;
+        gap: 7px;
+      }
+
+      .door-answer {
+        min-height: 42px;
+        padding: 8px 10px;
+        border: 2px solid var(--line);
+        color: var(--text);
+        background: var(--night);
+        cursor: pointer;
+        font-size: 0.67rem;
+        line-height: 1.4;
+        text-align: left;
+      }
+
+      .door-answer:hover {
+        border-color: var(--blue);
+        background: var(--panel-light);
+      }
+
+      .door-answer.is-correct {
+        border-color: var(--lime);
+        color: var(--ink);
+        background: var(--lime);
+      }
+
+      .door-answer.is-wrong {
+        border-color: var(--pink);
+        color: var(--ink);
+        background: var(--pink);
+        animation: door-rattle 360ms ease-in-out;
+      }
+
+      .door-feedback {
+        min-height: 1.4em;
+        margin: 9px 0 0;
+        color: var(--pink);
+        font-size: 0.63rem;
+        font-weight: 700;
+        line-height: 1.45;
+      }
+
+      .door-feedback:empty {
+        visibility: hidden;
+      }
+
+      .door-feedback.is-success {
+        color: var(--lime);
+      }
+
+      .door-next,
+      .door-enter,
+      .door-exit {
+        min-height: 41px;
+        margin-top: 11px;
+        padding: 8px 11px;
+        border: 2px solid var(--ink);
+        cursor: pointer;
+        font-size: 0.62rem;
+        font-weight: 900;
+        line-height: 1.25;
+        text-transform: uppercase;
+      }
+
+      .door-next,
+      .door-enter {
+        color: var(--ink);
+        background: var(--lime);
+        box-shadow: 3px 3px 0 var(--ink);
+      }
+
+      .door-exit {
+        float: right;
+        color: var(--text);
+        background: transparent;
+      }
+
+      .door-complete p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.68rem;
+        line-height: 1.55;
+      }
+
+      .door-complete h2 {
+        color: var(--lime);
+      }
+
+      .door-question-view[hidden],
+      .door-complete[hidden],
+      .door-next[hidden],
+      .door-exit[hidden] {
+        display: none;
+      }
+
+      .door-dialog.is-wrong {
+        animation: door-rattle 360ms ease-in-out;
+      }
+
+      @keyframes door-rattle {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px) rotate(-0.6deg); }
+        50% { transform: translateX(5px) rotate(0.6deg); }
+        75% { transform: translateX(-3px); }
+      }
+
+      :focus-visible {
+        outline: 3px solid var(--blue);
+        outline-offset: 3px;
+      }
+
+      @media (max-width: 700px) {
+        body {
+          display: block;
+        }
+
+        .game-shell {
+          width: 100%;
+          height: 100vh;
+          height: 100svh;
+          gap: 9px;
+          padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+          border: 0;
+          box-shadow: none;
+        }
+
+        .game-header {
+          gap: 7px;
+          padding: 7px 8px;
+        }
+
+        .brand-icon {
+          width: 27px;
+          height: 27px;
+          flex-basis: 27px;
+        }
+
+        .title-lockup {
+          gap: 7px;
+        }
+
+        .eyebrow {
+          font-size: 0.48rem;
+        }
+
+        h1 {
+          font-size: clamp(0.72rem, 3.4vw, 0.98rem);
+        }
+
+        .hud {
+          gap: 4px;
+        }
+
+        .hud-badge {
+          padding: 6px 5px;
+          font-size: 0.48rem;
+        }
+
+        .game-main {
+          grid-template-columns: minmax(0, 1fr);
+          align-content: center;
+          gap: 10px;
+        }
+
+        .screen-frame {
+          width: 100%;
+          justify-self: center;
+          border-width: 3px;
+        }
+
+        .control-dock {
+          padding: 7px;
+        }
+
+        .controls-title,
+        .control-help {
+          display: none;
+        }
+
+        .control-stack {
+          grid-template-columns: auto minmax(68px, 0.7fr) minmax(86px, 1fr);
+          align-items: center;
+          gap: 7px;
+        }
+
+        .move-controls {
+          gap: 4px;
+        }
+
+        .move-button {
+          width: 42px;
+          min-height: 46px;
+        }
+
+        .jump-button,
+        .action-button {
+          min-height: 48px;
+          font-size: 0.58rem;
+        }
+
+        .game-footer {
+          min-height: 36px;
+          padding: 6px 8px;
+        }
+
+        .game-hint {
+          font-size: 0.57rem;
+        }
+
+        .keyboard-hint {
+          display: none;
+        }
+      }
+
+      @media (max-width: 360px) {
+        .game-header {
+          padding-inline: 6px;
+        }
+
+        .eyebrow {
+          letter-spacing: 0.08em;
+        }
+
+        .hud-badge:first-child {
+          display: none;
+        }
+
+        .game-shell {
+          gap: 7px;
+        }
+
+        .game-main {
+          gap: 7px;
+        }
+
+        .control-stack {
+          grid-template-columns: auto minmax(64px, 0.75fr) minmax(78px, 1fr);
+          gap: 5px;
+        }
+
+        .move-button {
+          width: 38px;
+          min-height: 42px;
+        }
+
+        .game-hint {
+          font-size: 0.52rem;
+        }
+      }
+
+      @media (max-height: 620px) {
+        .game-shell {
+          gap: 7px;
+          padding-block: 8px;
+        }
+
+        .game-header {
+          padding-block: 6px;
+        }
+
+        .game-main {
+          gap: 8px;
+        }
+
+        .control-help {
+          display: none;
+        }
+
+        .game-footer {
+          min-height: 30px;
+          padding-block: 4px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="game-shell">
+      <header class="game-header">
+        <div class="title-lockup">
+          <span class="brand-icon" aria-hidden="true">✦</span>
+          <div class="title-copy">
+            <p class="eyebrow">Una aventura pixelada</p>
+            <h1>La mazmorra del hola</h1>
+          </div>
+        </div>
+        <div class="hud" aria-label="Estado de la partida">
+          <span class="hud-badge">SALA <strong id="room-label">01</strong></span>
+          <span class="hud-badge"><strong id="chest-count">0 / 5</strong> COFRES</span>
+        </div>
+      </header>
+
+      <section class="game-main" aria-label="Juego y controles">
+        <div class="screen-frame">
+          <canvas
+            id="game"
+            width="320"
+            height="192"
+            tabindex="0"
+            aria-label="Plataforma pixel art con desplazamiento lateral. Muévete a izquierda y derecha, salta sobre las plataformas y abre los cofres."
+          >
+            Tu navegador no admite el lienzo del juego. Usa un navegador actualizado para jugar.
+          </canvas>
+        </div>
+
+        <section class="control-dock" aria-label="Controles del juego">
+          <p class="controls-title">Controles</p>
+          <div class="control-stack">
+            <div class="move-controls" aria-label="Mover al personaje">
+              <button class="move-button" type="button" data-direction="left" aria-label="Mover a la izquierda">◀</button>
+              <button class="move-button" type="button" data-direction="right" aria-label="Mover a la derecha">▶</button>
+            </div>
+            <button class="jump-button" id="jump-button" type="button" aria-label="Saltar">↑ Saltar</button>
+            <button class="action-button" id="open-chest" type="button">Abrir cofre</button>
+          </div>
+          <p class="control-help">← / → o A / D: moverse<br>↑ / W / espacio: saltar<br>E: abrir cofre</p>
+        </section>
+      </section>
+
+      <footer class="game-footer">
+        <p class="game-hint" id="game-hint" role="status" aria-live="polite">← → para moverte · ↑ o espacio para saltar · acércate y abre un cofre.</p>
+        <p class="keyboard-hint">Sin cronómetro · sin puntuación secreta</p>
+      </footer>
+    </main>
+
+    <dialog class="pixel-dialog door-dialog" id="door-dialog" aria-labelledby="door-question-title">
+      <div class="treasure-icon" aria-hidden="true">▣</div>
+      <section class="door-question-view" id="door-question-view">
+        <p class="door-progress" id="door-progress">Pregunta 1 / 3</p>
+        <h2 class="door-question-title" id="door-question-title" tabindex="-1">El acertijo de la puerta</h2>
+        <div class="door-answers" id="door-answers" role="group" aria-labelledby="door-question-title"></div>
+        <p class="door-feedback" id="door-feedback" role="status" aria-live="polite"></p>
+        <button class="door-next" id="door-next" type="button" hidden></button>
+      </section>
+      <section class="door-complete" id="door-complete" aria-labelledby="door-complete-title" hidden>
+        <p class="door-progress">3 / 3 · puerta desbloqueada</p>
+        <h2 id="door-complete-title" tabindex="-1">¡Lo lograste!</h2>
+        <p>La puerta se abre y entra el sol. Al otro lado espera un bosque nuevo.</p>
+        <button class="door-enter" id="door-enter" type="button">Entrar a Sala 02 →</button>
+      </section>
+      <button class="door-exit" id="door-exit" type="button">Volver al juego</button>
+    </dialog>
+
+    <script>
+      (() => {
+        const canvas = document.querySelector("#game");
+        const context = canvas.getContext("2d");
+        const hint = document.querySelector("#game-hint");
+        const chestCount = document.querySelector("#chest-count");
+        const roomLabel = document.querySelector("#room-label");
+        const actionButton = document.querySelector("#open-chest");
+        const jumpButton = document.querySelector("#jump-button");
+        const doorDialog = document.querySelector("#door-dialog");
+        const doorQuestionView = document.querySelector("#door-question-view");
+        const doorProgress = document.querySelector("#door-progress");
+        const doorQuestionTitle = document.querySelector("#door-question-title");
+        const doorAnswers = document.querySelector("#door-answers");
+        const doorFeedback = document.querySelector("#door-feedback");
+        const doorNext = document.querySelector("#door-next");
+        const doorComplete = document.querySelector("#door-complete");
+        const doorExit = document.querySelector("#door-exit");
+        const doorEnter = document.querySelector("#door-enter");
+
+        const tile = 16;
+        const worldWidth = 2240;
+        const doorX = worldWidth - 74;
+        const floorY = 160;
+        const gravity = 560;
+        const moveSpeed = 118;
+        const jumpSpeed = 236;
+        let currentRoom = 1;
+        let doorUnlocked = false;
+        let doorQuestionIndex = 0;
+        const keyDirections = {
+          arrowleft: "left", a: "left",
+          arrowright: "right", d: "right",
+        };
+        const jumpKeys = new Set(["arrowup", "w", " "]);
+        const dungeonPlatforms = [
+          { x: 0, y: floorY, width: worldWidth, ground: true },
+          { x: 270, y: 132, width: 112 },
+          { x: 560, y: 124, width: 132 },
+          { x: 865, y: 136, width: 148 },
+          { x: 1180, y: 120, width: 144 },
+          { x: 1535, y: 132, width: 150 },
+          { x: 1870, y: 124, width: 155 },
+        ];
+        const forestPlatforms = [
+          { x: 0, y: floorY, width: worldWidth, ground: true },
+          { x: 260, y: 132, width: 120 },
+          { x: 550, y: 124, width: 138 },
+          { x: 850, y: 136, width: 152 },
+          { x: 1170, y: 120, width: 150 },
+          { x: 1510, y: 132, width: 155 },
+          { x: 1850, y: 124, width: 158 },
+        ];
+        const dungeonChests = [
+          {
+            x: 315, platformY: 132,
+            title: "Reliquia de curiosidad",
+            message: "Botín: +10 puntos de aventura. Explorar también cuenta como talento.",
+          },
+          {
+            x: 620, platformY: 124,
+            title: "Contabilidad del dragón",
+            message: "El dragón gastó todo el oro en galletas. Saldo actual: una migaja y un recibo.",
+          },
+          {
+            x: 930, platformY: 136,
+            title: "Nota del aventurero",
+            message: "Me alegró coincidir contigo en la iglesia. Si te apetece, me gustaría charlar algún día. Si no, todo bien.",
+          },
+          {
+            x: 1435, platformY: floorY,
+            title: "Calcetín legendario",
+            message: "Has encontrado un calcetín de dragón. Su pareja sigue perdida en otra mazmorra.",
+          },
+          {
+            x: 1940, platformY: 124,
+            title: "Poción de buena semana",
+            message: "Que algo te saque una sonrisa esta semana. Efecto secundario: saludar a una oveja.",
+          },
+        ];
+        const forestChests = [
+          {
+            x: 305, platformY: 132,
+            title: "Bellota de la suerte",
+            message: "Una ardilla te deja su bellota favorita. Dice que hoy pinta bien.",
+          },
+          {
+            x: 895, platformY: 136,
+            title: "El picnic del bosque",
+            message: "El zorro organizó un picnic, pero olvidó traer servilletas. El comité le da un 8/10.",
+          },
+          {
+            x: 1570, platformY: 132,
+            title: "Rayo de sol embotellado",
+            message: "Un poquito de sol para acompañarte el día. No hace falta agitar: ya brilla solo.",
+          },
+        ];
+        const doorQuestions = [
+          {
+            prompt: "¿Cuántos cofres hay en la Sala 01?",
+            answers: ["Tres", "Cinco", "Doce y medio"],
+            correct: 1,
+            miss: "¡El murciélago inspector pide revisar el marcador! Otra vez.",
+          },
+          {
+            prompt: "¿Qué controles hacen saltar al aventurero?",
+            answers: ["↑, W o espacio", "Solo la tecla E", "Soplarle al teléfono"],
+            correct: 0,
+            miss: "¡Esa tecla abre cofres! El murciélago te da otra oportunidad.",
+          },
+          {
+            prompt: "¿Quién se gastó el oro en galletas?",
+            answers: ["El dragón", "La ardilla", "El comité de ovejas"],
+            correct: 0,
+            miss: "¡El dragón presenta recibos! Revisa el expediente y prueba otra vez.",
+          },
+        ];
+        let platforms = dungeonPlatforms;
+        let chests = dungeonChests;
+        const player = {
+          x: 28,
+          y: floorY - 16,
+          width: 12,
+          height: 16,
+          velocityX: 0,
+          velocityY: 0,
+          onGround: true,
+          facing: 1,
+          steps: 0,
+        };
+        const heldDirections = new Set();
+        const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        let cameraX = 0;
+        let lastFrame = 0;
+
+        function setHint(message) {
+          if (hint.textContent !== message) hint.textContent = message;
+        }
+
+        function nearbyChest() {
+          const closeChests = chests
+            .map((chest) => ({
+              chest,
+              horizontal: Math.abs(player.x + player.width / 2 - (chest.x + 8)),
+              vertical: Math.abs(player.y + player.height - chest.platformY),
+            }))
+            .filter(({ horizontal, vertical }) => horizontal <= 28 && vertical <= 25)
+            .sort((a, b) => a.horizontal - b.horizontal);
+          return closeChests.find(({ chest }) => !chest.opened)?.chest ?? closeChests[0]?.chest;
+        }
+
+        function isNearDoor() {
+          return currentRoom === 1
+            && Math.abs(player.x + player.width / 2 - (doorX + 14)) <= 34
+            && Math.abs(player.y + player.height - floorY) <= 24;
+        }
+
+        function updateActionLabel() {
+          if (isNearDoor()) {
+            actionButton.textContent = doorUnlocked ? "Entrar a Sala 02" : "Examinar puerta";
+          } else {
+            actionButton.textContent = "Abrir cofre";
+          }
+        }
+
+        function updateHint() {
+          updateActionLabel();
+          if (isNearDoor()) {
+            setHint(doorUnlocked
+              ? "La puerta está abierta. Pulsa ABRIR para entrar al bosque."
+              : "Puerta cerrada: responde 3 preguntas para pasar a la Sala 02.");
+            return;
+          }
+          const chest = nearbyChest();
+          if (chest && !chest.opened) {
+            setHint("¡Cofre a tiro! Pulsa ABRIR o E.");
+          } else if (chest?.opened) {
+            setHint("Cofre abierto. Su mensaje se queda aquí; puedes seguir avanzando.");
+          } else {
+            setHint(currentRoom === 2
+              ? "Sala 02: bosque de mañana. Salta, explora y busca los cofres."
+              : "Avanza, salta las plataformas y busca los cofres.");
+          }
+        }
+
+        function jump() {
+          if (doorDialog.open || !player.onGround) return;
+          player.velocityY = -jumpSpeed;
+          player.onGround = false;
+        }
+
+        function overlapsDoor(x) {
+          return currentRoom === 1
+            && x < doorX + 28
+            && x + player.width > doorX;
+        }
+
+        function overlapsChest(x, y, chest) {
+          const left = chest.x + 2;
+          const right = chest.x + 14;
+          const top = chest.platformY - 12;
+          return x < right && x + player.width > left && y < chest.platformY && y + player.height > top;
+        }
+
+        function updatePhysics(deltaTime) {
+          if (doorDialog.open) return;
+          const axis = Number(heldDirections.has("right")) - Number(heldDirections.has("left"));
+          player.velocityX = axis * moveSpeed;
+          if (axis) player.facing = axis;
+
+          let nextX = Math.max(0, Math.min(worldWidth - player.width, player.x + player.velocityX * deltaTime));
+          if (axis) {
+            for (const chest of chests) {
+              if (chest.opened) continue;
+              if (!overlapsChest(nextX, player.y, chest)) continue;
+              if (player.x + player.width / 2 < chest.x + 8) {
+                nextX = chest.x + 2 - player.width;
+              } else {
+                nextX = chest.x + 14;
+              }
+            }
+            if (overlapsDoor(nextX)) {
+              nextX = player.x + player.width / 2 < doorX + 14
+                ? doorX - player.width
+                : doorX + 28;
+            }
+          }
+          player.x = Math.max(0, Math.min(worldWidth - player.width, nextX));
+          player.steps += Math.abs(player.velocityX * deltaTime);
+
+          const previousBottom = player.y + player.height;
+          player.velocityY = Math.min(player.velocityY + gravity * deltaTime, 430);
+          player.y += player.velocityY * deltaTime;
+          player.onGround = false;
+
+          if (player.velocityY >= 0) {
+            for (const platform of platforms) {
+              const overlapsPlatform = player.x + player.width > platform.x && player.x < platform.x + platform.width;
+              if (overlapsPlatform && previousBottom <= platform.y && player.y + player.height >= platform.y) {
+                player.y = platform.y - player.height;
+                player.velocityY = 0;
+                player.onGround = true;
+              }
+            }
+          }
+
+          const targetCamera = Math.max(0, Math.min(worldWidth - canvas.width, player.x - canvas.width * 0.38));
+          cameraX += (targetCamera - cameraX) * Math.min(1, deltaTime * 9);
+          updateHint();
+        }
+
+        function updateChestCount() {
+          const opened = chests.filter((chest) => chest.opened).length;
+          chestCount.textContent = `${opened} / ${chests.length}`;
+          return opened;
+        }
+
+        function openNearbyChest() {
+          if (doorDialog.open) return;
+          const chest = nearbyChest();
+          if (!chest) {
+            setHint("Todavía no hay ningún cofre al alcance. Un pasito más.");
+            return;
+          }
+          if (chest.opened) {
+            setHint("Ese cofre ya está abierto; su mensaje sigue sobre él.");
+            return;
+          }
+
+          chest.opened = true;
+          const opened = updateChestCount();
+          chest.displayMessage = `${chest.title}: ${chest.message}`;
+          if (opened === chests.length) {
+            chest.displayMessage += ` ¡Sala 0${currentRoom} completada! Has abierto todos los cofres.`;
+          }
+          updateHint();
+        }
+
+        function renderDoorQuestion() {
+          const question = doorQuestions[doorQuestionIndex];
+          doorProgress.textContent = `Pregunta ${doorQuestionIndex + 1} / ${doorQuestions.length}`;
+          doorQuestionTitle.textContent = question.prompt;
+          doorFeedback.textContent = "";
+          doorFeedback.className = "door-feedback";
+          doorNext.hidden = true;
+          doorAnswers.replaceChildren();
+          question.answers.forEach((answer, index) => {
+            const button = document.createElement("button");
+            button.className = "door-answer";
+            button.type = "button";
+            button.textContent = answer;
+            button.addEventListener("click", () => {
+              if (!doorNext.hidden) return;
+              if (index !== question.correct) {
+                doorDialog.classList.remove("is-wrong");
+                void doorDialog.offsetWidth;
+                doorDialog.classList.add("is-wrong");
+                button.classList.add("is-wrong");
+                doorFeedback.textContent = question.miss;
+                window.setTimeout(() => {
+                  doorDialog.classList.remove("is-wrong");
+                  button.classList.remove("is-wrong");
+                }, 400);
+                return;
+              }
+
+              doorAnswers.querySelectorAll("button").forEach((option) => {
+                option.disabled = true;
+              });
+              button.classList.add("is-correct");
+              doorFeedback.className = "door-feedback is-success";
+              doorFeedback.textContent = "¡Correcto! La cerradura hace clic.";
+
+              if (doorQuestionIndex < doorQuestions.length - 1) {
+                doorNext.textContent = "Siguiente pregunta →";
+                doorNext.hidden = false;
+                doorNext.focus({ preventScroll: true });
+              } else {
+                doorUnlocked = true;
+                updateHint();
+                doorQuestionView.hidden = true;
+                doorComplete.hidden = false;
+                doorExit.hidden = true;
+                doorDialog.setAttribute("aria-labelledby", "door-complete-title");
+                doorComplete.querySelector("h2").focus({ preventScroll: true });
+              }
+            });
+            doorAnswers.append(button);
+          });
+        }
+
+        function openDoorQuiz() {
+          if (doorUnlocked) {
+            enterForest();
+            return;
+          }
+          doorQuestionIndex = 0;
+          doorQuestionView.hidden = false;
+          doorComplete.hidden = true;
+          doorExit.hidden = false;
+          doorDialog.setAttribute("aria-labelledby", "door-question-title");
+          doorDialog.classList.remove("is-wrong");
+          renderDoorQuestion();
+          doorDialog.showModal();
+          doorQuestionTitle.focus({ preventScroll: true });
+        }
+
+        function enterForest() {
+          if (!doorUnlocked) return;
+          currentRoom = 2;
+          platforms = forestPlatforms;
+          chests = forestChests;
+          player.x = 28;
+          player.y = floorY - player.height;
+          player.velocityX = 0;
+          player.velocityY = 0;
+          player.onGround = true;
+          player.facing = 1;
+          cameraX = 0;
+          heldDirections.clear();
+          roomLabel.textContent = "02";
+          updateChestCount();
+          updateHint();
+        }
+
+        function activateAction() {
+          if (isNearDoor()) {
+            openDoorQuiz();
+            return;
+          }
+          openNearbyChest();
+        }
+
+        function drawBackdrop() {
+          context.fillStyle = "#282137";
+          context.fillRect(0, 0, canvas.width, canvas.height);
+          const offset = -((cameraX * 0.32) % 32);
+          for (let y = 0; y < floorY; y += 16) {
+            for (let x = offset - 32; x < canvas.width + 32; x += 32) {
+              const shade = Math.abs(Math.floor((x - offset) / 32) + y / 16) % 2;
+              context.fillStyle = shade ? "#393149" : "#41374f";
+              context.fillRect(x, y, 32, 16);
+              context.fillStyle = "#262033";
+              context.fillRect(x, y + 14, 32, 2);
+              context.fillRect(x + 15, y, 1, 7);
+              context.fillRect(x + 27, y + 8, 1, 6);
+              context.fillStyle = "rgba(255,255,255,0.045)";
+              context.fillRect(x + 3, y + 2, 9, 1);
+            }
+          }
+
+          const parallax = cameraX * 0.48;
+          const firstPillar = Math.floor(parallax / 250) * 250 - 250;
+          for (let worldX = firstPillar; worldX < parallax + canvas.width + 250; worldX += 250) {
+            const x = Math.round(worldX - parallax);
+            context.fillStyle = "#30283f";
+            context.fillRect(x + 18, 56, 18, 90);
+            context.fillRect(x + 11, 56, 32, 8);
+            context.fillRect(x + 14, 140, 26, 6);
+            context.fillStyle = "#4a3d59";
+            context.fillRect(x + 21, 64, 3, 75);
+          }
+
+          context.fillStyle = "rgba(130, 220, 255, 0.25)";
+          for (let i = 0; i < 7; i += 1) {
+            const x = ((i * 61 - cameraX * 0.18) % (canvas.width + 20) + canvas.width + 20) % (canvas.width + 20);
+            context.fillRect(Math.floor(x), 28 + (i % 3) * 18, 2, 2);
+          }
+        }
+
+        function drawForestBackdrop(time) {
+          context.fillStyle = "#8edfff";
+          context.fillRect(0, 0, canvas.width, canvas.height);
+
+          const sunX = Math.round(canvas.width - 48 - cameraX * 0.08);
+          context.fillStyle = "rgba(255, 223, 111, 0.2)";
+          context.fillRect(sunX - 23, 8, 48, 48);
+          context.fillStyle = "#ffd95e";
+          context.fillRect(sunX - 12, 17, 28, 28);
+          context.fillStyle = "#fff2a1";
+          context.fillRect(sunX - 8, 21, 20, 20);
+          context.fillStyle = "#fff2a1";
+          context.fillRect(sunX - 2, 8, 8, 7);
+          context.fillRect(sunX - 2, 47, 8, 7);
+          context.fillRect(sunX - 22, 27, 8, 7);
+          context.fillRect(sunX + 17, 27, 8, 7);
+
+          function cloud(worldX, y, shade) {
+            const x = Math.round(worldX - cameraX * 0.2);
+            if (x < -60 || x > canvas.width + 60) return;
+            context.fillStyle = shade;
+            context.fillRect(x + 7, y, 18, 8);
+            context.fillRect(x, y + 6, 35, 8);
+            context.fillRect(x + 27, y + 3, 13, 9);
+            context.fillStyle = "rgba(255,255,255,0.28)";
+            context.fillRect(x + 9, y + 2, 13, 2);
+          }
+          for (let x = Math.floor(cameraX * 0.2 / 250) * 250 - 250; x < cameraX * 0.2 + canvas.width + 250; x += 250) {
+            cloud(x + 85, 24 + (Math.floor(x / 250) % 2) * 16, "#f5fff0");
+          }
+
+          const hillOffset = -((cameraX * 0.25) % 120);
+          for (let x = hillOffset - 120; x < canvas.width + 120; x += 120) {
+            context.fillStyle = "#75c889";
+            context.fillRect(x + 24, 86, 72, 74);
+            context.fillRect(x + 12, 98, 96, 62);
+            context.fillRect(x, 112, 120, 48);
+            context.fillStyle = "#65b979";
+            context.fillRect(x + 40, 92, 45, 5);
+          }
+
+          const firstTree = Math.floor(cameraX * 0.48 / 190) * 190 - 190;
+          for (let worldX = firstTree; worldX < cameraX * 0.48 + canvas.width + 190; worldX += 190) {
+            const x = Math.round(worldX - cameraX * 0.48);
+            const height = 34 + (Math.floor(worldX / 190) % 2) * 12;
+            context.fillStyle = "#78523f";
+            context.fillRect(x + 12, 128 - height / 3, 10, height + 28);
+            context.fillStyle = "#32885a";
+            context.fillRect(x + 2, 90 - height / 3, 30, 25);
+            context.fillRect(x - 4, 99 - height / 3, 42, 18);
+            context.fillStyle = "#4eaa65";
+            context.fillRect(x + 6, 86 - height / 3, 20, 7);
+            context.fillRect(x + 1, 105 - height / 3, 9, 5);
+          }
+
+          context.fillStyle = "rgba(255,255,255,0.7)";
+          for (let i = 0; i < 8; i += 1) {
+            const drift = prefersReducedMotion ? 0 : time * 0.008;
+            const x = ((i * 47 - cameraX * 0.12 + drift) % (canvas.width + 12) + canvas.width + 12) % (canvas.width + 12);
+            context.fillRect(Math.floor(x), 64 + (i % 4) * 19, 2, 2);
+          }
+        }
+
+        function drawTorch(worldX, y, frame) {
+          const x = Math.round(worldX - cameraX * 0.72);
+          if (x < -16 || x > canvas.width + 16) return;
+          context.fillStyle = "#574260";
+          context.fillRect(x + 2, y + 8, 12, 5);
+          context.fillStyle = "#9c6744";
+          context.fillRect(x + 7, y + 7, 3, 9);
+          context.fillStyle = frame % 2 ? "#ff788e" : "#ffd66e";
+          context.fillRect(x + 5, y + 3, 7, 5);
+          context.fillStyle = "#fff4a6";
+          context.fillRect(x + 7, y + 2 + (frame % 2), 3, 4);
+          context.fillStyle = "rgba(255, 214, 110, 0.13)";
+          context.fillRect(x, y, 16, 12);
+        }
+
+        function drawPlatform(platform) {
+          const x = Math.round(platform.x - cameraX);
+          const height = platform.ground ? canvas.height - platform.y : 15;
+          if (currentRoom === 2) {
+            context.fillStyle = platform.ground ? "#80523c" : "#74503e";
+            context.fillRect(x, platform.y, platform.width, height);
+            context.fillStyle = "#3b9a56";
+            context.fillRect(x, platform.y, platform.width, 5);
+            context.fillStyle = "#9ce36d";
+            context.fillRect(x, platform.y, platform.width, 2);
+            context.fillStyle = "#553b37";
+            context.fillRect(x, platform.y + 5, platform.width, 2);
+            for (let blockX = x + 15; blockX < x + platform.width; blockX += 16) {
+              context.fillStyle = "#674638";
+              context.fillRect(blockX, platform.y + 7, 1, Math.max(0, height - 7));
+            }
+            if (platform.ground) {
+              const firstFlower = Math.floor((cameraX - platform.x) / 72) * 72 + platform.x;
+              for (let flowerX = firstFlower; flowerX < cameraX + canvas.width && flowerX < platform.x + platform.width; flowerX += 72) {
+                const flowerScreenX = Math.round(flowerX - cameraX + 24);
+                if (flowerScreenX < x || flowerScreenX >= x + platform.width) continue;
+                context.fillStyle = "#397b49";
+                context.fillRect(flowerScreenX + 2, platform.y - 5, 1, 4);
+                context.fillStyle = flowerX % 3 ? "#fff2a1" : "#ff8aa4";
+                context.fillRect(flowerScreenX, platform.y - 7, 3, 3);
+                context.fillStyle = "#fffdf0";
+                context.fillRect(flowerScreenX + 1, platform.y - 6, 1, 1);
+              }
+            } else {
+              context.fillStyle = "#9d6945";
+              context.fillRect(x + 3, platform.y + 9, platform.width - 6, 3);
+            }
+            return;
+          }
+          context.fillStyle = platform.ground ? "#554963" : "#665675";
+          context.fillRect(x, platform.y, platform.width, height);
+          context.fillStyle = "#b09ac1";
+          context.fillRect(x, platform.y, platform.width, 3);
+          context.fillStyle = "#342b43";
+          context.fillRect(x, platform.y + 3, platform.width, 2);
+          for (let blockX = x + 15; blockX < x + platform.width; blockX += 16) {
+            context.fillStyle = "#40364f";
+            context.fillRect(blockX, platform.y + 5, 1, Math.max(0, height - 5));
+          }
+          if (!platform.ground) {
+            context.fillStyle = "#857292";
+            context.fillRect(x + 3, platform.y + 7, platform.width - 6, 1);
+          }
+        }
+
+        function drawDoor() {
+          const x = Math.round(doorX - cameraX);
+          const y = floorY - 46;
+          if (x < -36 || x > canvas.width + 36) return;
+          context.fillStyle = "#211827";
+          context.fillRect(x, y + 6, 28, 40);
+          context.fillStyle = "#bd8b50";
+          context.fillRect(x + 3, y + 3, 22, 43);
+          context.fillStyle = "#e2bd72";
+          context.fillRect(x + 6, y, 16, 5);
+          context.fillRect(x + 2, y + 7, 3, 36);
+          context.fillRect(x + 23, y + 7, 3, 36);
+          if (doorUnlocked) {
+            context.fillStyle = "#b9f28d";
+            context.fillRect(x + 7, y + 8, 14, 35);
+            context.fillStyle = "#fff0a0";
+            context.fillRect(x + 11, y + 13, 6, 25);
+            context.fillStyle = "#5e7c49";
+            context.fillRect(x + 7, y + 39, 14, 4);
+          } else {
+            context.fillStyle = "#67475b";
+            context.fillRect(x + 7, y + 8, 14, 35);
+            context.fillStyle = "#8e6070";
+            context.fillRect(x + 9, y + 11, 10, 29);
+            context.fillStyle = "#ffd66e";
+            context.fillRect(x + 16, y + 24, 2, 3);
+            context.fillRect(x + 12, y + 19, 8, 2);
+          }
+        }
+
+        function drawChest(chest, highlight) {
+          const px = Math.round(chest.x - cameraX);
+          const py = chest.platformY - 14;
+          if (px < -tile || px > canvas.width + tile) return;
+          if (highlight && !chest.opened) {
+            context.strokeStyle = "#c8f36b";
+            context.lineWidth = 1;
+            context.strokeRect(px + 1.5, py + 1.5, tile - 3, tile - 2);
+            context.fillStyle = "#c8f36b";
+            context.font = "bold 8px monospace";
+            context.fillText("!", px + 6, py - 1);
+          }
+          context.fillStyle = "#211522";
+          context.fillRect(px + 2, py + 11, 12, 4);
+          context.fillStyle = "#9b542e";
+          context.fillRect(px + 3, py + 6, 10, 7);
+          context.fillStyle = "#d8863b";
+          context.fillRect(px + 4, py + 7, 8, 4);
+          context.fillStyle = "#f6c755";
+          context.fillRect(px + 7, py + 8, 2, 4);
+          context.fillStyle = "#613648";
+          context.fillRect(px + 3, py + 11, 10, 2);
+          if (chest.opened) {
+            context.fillStyle = "#39223b";
+            context.fillRect(px + 4, py + 5, 8, 5);
+            context.fillStyle = "#b56d38";
+            context.fillRect(px + 3, py + 3, 10, 2);
+            context.fillStyle = "#f6c755";
+            context.fillRect(px + 4, py + 3, 8, 1);
+          } else {
+            context.fillStyle = "#bd6e37";
+            context.fillRect(px + 3, py + 4, 10, 4);
+            context.fillStyle = "#e7a348";
+            context.fillRect(px + 4, py + 4, 8, 1);
+            context.fillStyle = "#f6c755";
+            context.fillRect(px + 7, py + 6, 2, 4);
+          }
+        }
+
+        function drawMessageBubble(chest, message) {
+          const chestX = Math.round(chest.x - cameraX);
+          if (chestX < -tile || chestX > canvas.width + tile) return;
+
+          const width = Math.min(184, canvas.width - 12);
+          const textWidth = width - 14;
+          context.font = "8px monospace";
+          const lines = [];
+          let line = "";
+          for (const word of message.split(/\s+/)) {
+            const candidate = line ? `${line} ${word}` : word;
+            if (line && context.measureText(candidate).width > textWidth) {
+              lines.push(line);
+              line = word;
+            } else {
+              line = candidate;
+            }
+          }
+          if (line) lines.push(line);
+          if (lines.length > 7) {
+            lines.length = 7;
+            lines[6] = `${lines[6].slice(0, 25)}…`;
+          }
+
+          const height = lines.length * 10 + 12;
+          const centerX = chestX + 8;
+          const x = Math.max(6, Math.min(canvas.width - width - 6, centerX - width / 2));
+          const y = Math.max(4, chest.platformY - height - 20);
+          const tailX = Math.max(x + 11, Math.min(x + width - 11, centerX));
+
+          context.fillStyle = "#130f1c";
+          context.beginPath();
+          context.moveTo(tailX - 7, y + height - 1);
+          context.lineTo(tailX, y + height + 7);
+          context.lineTo(tailX + 7, y + height - 1);
+          context.closePath();
+          context.fill();
+          context.fillStyle = "#fff4df";
+          context.beginPath();
+          context.moveTo(tailX - 4, y + height - 1);
+          context.lineTo(tailX, y + height + 4);
+          context.lineTo(tailX + 4, y + height - 1);
+          context.closePath();
+          context.fill();
+
+          context.fillStyle = "#130f1c";
+          context.fillRect(x, y, width, height);
+          context.fillStyle = "#fff4df";
+          context.fillRect(x + 2, y + 2, width - 4, height - 4);
+          context.font = "8px monospace";
+          context.textBaseline = "top";
+          context.fillStyle = "#130f1c";
+          lines.forEach((textLine, index) => {
+            context.fillText(textLine, x + 7, y + 6 + index * 10);
+          });
+          context.textBaseline = "alphabetic";
+        }
+
+        function drawPlayer(time) {
+          const moving = heldDirections.size > 0;
+          const bob = !prefersReducedMotion && moving ? Math.floor(time / 80) % 2 : 0;
+          const px = Math.round(player.x - cameraX);
+          const py = Math.round(player.y + bob);
+          context.fillStyle = "rgba(20, 14, 27, 0.42)";
+          context.fillRect(px + 1, py + player.height, 13, 2);
+          context.fillStyle = "#4b2e55";
+          context.fillRect(px + 2, py + 11, 4, 4);
+          context.fillRect(px + 8, py + 11, 4, 4);
+          context.fillStyle = "#392746";
+          context.fillRect(px + 1, py + 7, 12, 6);
+          context.fillStyle = "#a982d3";
+          context.fillRect(px + 2, py + 7, 10, 5);
+          context.fillStyle = "#c8f36b";
+          context.fillRect(px + 2, py + 11, 10, 2);
+          context.fillStyle = "#efbd91";
+          context.fillRect(px + 4, py + 3, 7, 5);
+          context.fillStyle = "#392746";
+          context.fillRect(px + 3, py + 2, 9, 3);
+          context.fillRect(px + 4, py + 1, 7, 2);
+          context.fillStyle = "#ffd66e";
+          context.fillRect(px + 4, py, 7, 2);
+          context.fillStyle = "#171424";
+          context.fillRect(px + (player.facing < 0 ? 4 : 10), py + 5, 1, 1);
+        }
+
+        function drawScene(time = 0) {
+          const torchFrame = prefersReducedMotion ? 0 : Math.floor(time / 240);
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          if (currentRoom === 1) {
+            drawBackdrop();
+            for (let x = Math.floor(cameraX * 0.72 / 360) * 360 - 120; x < cameraX * 0.72 + canvas.width + 360; x += 360) {
+              drawTorch(x + 120, 82 + ((x / 360) % 2) * 18, torchFrame + x / 360);
+            }
+          } else {
+            drawForestBackdrop(time);
+          }
+          platforms.forEach(drawPlatform);
+          if (currentRoom === 1) drawDoor();
+          const nearby = nearbyChest();
+          chests.forEach((chest) => drawChest(chest, chest === nearby));
+          drawPlayer(time);
+          chests.forEach((chest) => {
+            if (chest.opened && chest.displayMessage) drawMessageBubble(chest, chest.displayMessage);
+          });
+        }
+
+        function beginDirection(direction) {
+          heldDirections.add(direction);
+        }
+
+        function endDirection(direction) {
+          heldDirections.delete(direction);
+        }
+
+        document.querySelectorAll("[data-direction]").forEach((button) => {
+          const direction = button.dataset.direction;
+          button.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+            button.setPointerCapture(event.pointerId);
+            beginDirection(direction);
+          });
+          ["pointerup", "pointercancel", "lostpointercapture"].forEach((eventName) => {
+            button.addEventListener(eventName, () => endDirection(direction));
+          });
+        });
+
+        window.addEventListener("keydown", (event) => {
+          const key = event.key.toLowerCase();
+          const direction = keyDirections[key];
+          if (direction) {
+            event.preventDefault();
+            beginDirection(direction);
+            return;
+          }
+          if (jumpKeys.has(key) && event.target !== jumpButton && event.target !== actionButton) {
+            event.preventDefault();
+            if (!event.repeat) jump();
+            return;
+          }
+          if (["e", "enter"].includes(key) && event.target === canvas) {
+            event.preventDefault();
+            activateAction();
+          }
+        });
+
+        window.addEventListener("keyup", (event) => {
+          const direction = keyDirections[event.key.toLowerCase()];
+          if (direction) endDirection(direction);
+        });
+
+        window.addEventListener("blur", () => heldDirections.clear());
+        actionButton.addEventListener("click", activateAction);
+        jumpButton.addEventListener("click", jump);
+        canvas.addEventListener("pointerdown", () => canvas.focus({ preventScroll: true }));
+
+        doorNext.addEventListener("click", () => {
+          if (doorQuestionIndex >= doorQuestions.length - 1) return;
+          doorQuestionIndex += 1;
+          renderDoorQuestion();
+          doorQuestionTitle.focus({ preventScroll: true });
+        });
+        doorExit.addEventListener("click", () => doorDialog.close());
+        doorEnter.addEventListener("click", () => {
+          doorDialog.close();
+          enterForest();
+        });
+        doorDialog.addEventListener("close", () => {
+          heldDirections.clear();
+          actionButton.focus({ preventScroll: true });
+        });
+
+        function gameLoop(time) {
+          const deltaTime = Math.min((time - lastFrame) / 1000, 0.04);
+          lastFrame = time;
+          if (!doorDialog.open) updatePhysics(deltaTime);
+          drawScene(time);
+          window.requestAnimationFrame(gameLoop);
+        }
+
+        updateHint();
+        updateChestCount();
+        drawScene();
+        window.requestAnimationFrame(gameLoop);
+      })();
+    </script>
+  </body>
+</html>
