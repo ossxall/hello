@@ -899,9 +899,9 @@
           ];
           enemies = spawnPoints.map((spawn, index) => ({
             ...spawn,
-            y: floorY - 14,
-            width: 14,
-            height: 14,
+            y: floorY - 22,
+            width: 22,
+            height: 22,
             speed: 24 + (index % 2) * 5,
             direction: -1,
             phase: index * 1.7,
@@ -1796,13 +1796,14 @@
           const bob = prefersReducedMotion ? 0 : Math.sin(time / 120 + enemy.phase) * 1.2;
           context.fillStyle = "rgba(16, 12, 22, 0.45)";
           context.beginPath();
-          context.ellipse(x + 7, y + 14, 8, 2, 0, 0, Math.PI * 2);
+          context.ellipse(x + enemy.width / 2, y + enemy.height, enemy.width * 0.58, 2.8, 0, 0, Math.PI * 2);
           context.fill();
           context.translate(x, y + bob);
           if (enemy.direction < 0) {
             context.translate(enemy.width, 0);
             context.scale(-1, 1);
           }
+          context.scale(enemy.width / 16, enemy.height / 15);
 
           // A little dungeon goblin with horns, glowing eyes, and sharp teeth.
           context.fillStyle = "#31513b";
