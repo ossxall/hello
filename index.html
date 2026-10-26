@@ -30,6 +30,9 @@
       *::before,
       *::after {
         box-sizing: border-box;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
       }
 
       html {
@@ -817,6 +820,8 @@
         const dialogueSpeaker = document.querySelector("#dialogue-speaker");
         const dialogueLine = document.querySelector("#dialogue-line");
         const dialogueNextButton = document.querySelector("#dialogue-next");
+
+        document.addEventListener("contextmenu", (event) => event.preventDefault());
 
         const tile = 16;
         const playerScale = 1.75;
