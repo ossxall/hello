@@ -554,6 +554,10 @@
       (() => {
         const canvas = document.querySelector("#game");
         const context = canvas.getContext("2d");
+        const playerSpriteCanvas = document.createElement("canvas");
+        playerSpriteCanvas.width = 18;
+        playerSpriteCanvas.height = 20;
+        const playerSpriteContext = playerSpriteCanvas.getContext("2d");
         const hint = document.querySelector("#game-hint");
         const chestCount = document.querySelector("#chest-count");
         const roomLabel = document.querySelector("#room-label");
@@ -561,6 +565,7 @@
         const jumpButton = document.querySelector("#jump-button");
 
         const tile = 16;
+        const playerScale = 1.75;
         const worldWidth = 2240;
         const doorX = worldWidth - 74;
         const floorY = 160;
@@ -644,9 +649,9 @@
         let chests = dungeonChests;
         const player = {
           x: 28,
-          y: floorY - 16,
-          width: 12,
-          height: 16,
+          y: floorY - 16 * playerScale,
+          width: 12 * playerScale,
+          height: 16 * playerScale,
           velocityX: 0,
           velocityY: 0,
           onGround: true,
@@ -1276,73 +1281,92 @@
         function drawPlayer(time) {
           const moving = heldDirections.size > 0;
           const bob = !prefersReducedMotion && moving ? Math.floor(time / 80) % 2 : 0;
+          const gameContext = context;
           const px = Math.round(player.x - cameraX) - 2;
           const py = Math.round(player.y + bob);
-          context.fillStyle = "rgba(20, 14, 27, 0.42)";
-          context.fillRect(px + 1, py + player.height + 1, 15, 2);
+          const spriteContext = playerSpriteContext;
+          spriteContext.setTransform(1, 0, 0, 1, 0, 0);
+          spriteContext.clearRect(0, 0, playerSpriteCanvas.width, playerSpriteCanvas.height);
+          spriteContext.setTransform(1, 0, 0, 1, -px, -py);
+          {
+            const context = spriteContext;
+            context.fillStyle = "rgba(20, 14, 27, 0.42)";
+            context.fillRect(px + 1, py + 17, 15, 2);
 
-          // Sword and hilt, held upright at the knight's side.
-          context.fillStyle = "#394252";
-          context.fillRect(px + 13, py + 2, 4, 7);
-          context.fillRect(px + 14, py, 2, 3);
-          context.fillStyle = "#dce6ef";
-          context.fillRect(px + 14, py + 2, 2, 5);
-          context.fillStyle = "#ffffff";
-          context.fillRect(px + 14, py + 2, 1, 4);
-          context.fillStyle = "#9a643e";
-          context.fillRect(px + 14, py + 9, 2, 5);
-          context.fillStyle = "#ffd66e";
-          context.fillRect(px + 12, py + 8, 6, 2);
+            // Sword and hilt, held upright at the knight's side.
+            context.fillStyle = "#394252";
+            context.fillRect(px + 13, py + 2, 4, 7);
+            context.fillRect(px + 14, py, 2, 3);
+            context.fillStyle = "#dce6ef";
+            context.fillRect(px + 14, py + 2, 2, 5);
+            context.fillStyle = "#ffffff";
+            context.fillRect(px + 14, py + 2, 1, 4);
+            context.fillStyle = "#9a643e";
+            context.fillRect(px + 14, py + 9, 2, 5);
+            context.fillStyle = "#ffd66e";
+            context.fillRect(px + 12, py + 8, 6, 2);
 
-          // Mail sleeves and white templar surcoat.
-          context.fillStyle = "#596579";
-          context.fillRect(px + 3, py + 8, 3, 5);
-          context.fillRect(px + 11, py + 8, 3, 5);
-          context.fillStyle = "#d9dde3";
-          context.fillRect(px + 4, py + 7, 9, 7);
-          context.fillStyle = "#fffdf5";
-          context.fillRect(px + 5, py + 8, 6, 5);
-          context.fillRect(px + 4, py + 12, 9, 2);
-          context.fillStyle = "#b9c1cc";
-          context.fillRect(px + 11, py + 8, 2, 5);
-          context.fillStyle = "#714738";
-          context.fillRect(px + 5, py + 13, 8, 2);
-          context.fillStyle = "#ffd66e";
-          context.fillRect(px + 8, py + 13, 2, 2);
-          context.fillStyle = "#394252";
-          context.fillRect(px + 4, py + 14, 4, 2);
-          context.fillRect(px + 10, py + 14, 4, 2);
+            // Mail sleeves and white templar surcoat.
+            context.fillStyle = "#596579";
+            context.fillRect(px + 3, py + 8, 3, 5);
+            context.fillRect(px + 11, py + 8, 3, 5);
+            context.fillStyle = "#d9dde3";
+            context.fillRect(px + 4, py + 7, 9, 7);
+            context.fillStyle = "#fffdf5";
+            context.fillRect(px + 5, py + 8, 6, 5);
+            context.fillRect(px + 4, py + 12, 9, 2);
+            context.fillStyle = "#b9c1cc";
+            context.fillRect(px + 11, py + 8, 2, 5);
+            context.fillStyle = "#714738";
+            context.fillRect(px + 5, py + 13, 8, 2);
+            context.fillStyle = "#ffd66e";
+            context.fillRect(px + 8, py + 13, 2, 2);
+            context.fillStyle = "#394252";
+            context.fillRect(px + 4, py + 14, 4, 2);
+            context.fillRect(px + 10, py + 14, 4, 2);
 
-          // Red cross on the white shield.
-          context.fillStyle = "#343744";
-          context.fillRect(px, py + 7, 8, 8);
-          context.fillRect(px + 1, py + 14, 6, 2);
-          context.fillRect(px + 2, py + 16, 4, 1);
-          context.fillStyle = "#f7f3e9";
-          context.fillRect(px + 1, py + 8, 6, 6);
-          context.fillRect(px + 2, py + 14, 4, 1);
-          context.fillStyle = "#cf3448";
-          context.fillRect(px + 3, py + 9, 2, 6);
-          context.fillRect(px + 2, py + 10, 4, 2);
-          context.fillStyle = "#ff8790";
-          context.fillRect(px + 3, py + 9, 1, 2);
+            // Red cross on the white shield.
+            context.fillStyle = "#343744";
+            context.fillRect(px, py + 7, 8, 8);
+            context.fillRect(px + 1, py + 14, 6, 2);
+            context.fillRect(px + 2, py + 16, 4, 1);
+            context.fillStyle = "#f7f3e9";
+            context.fillRect(px + 1, py + 8, 6, 6);
+            context.fillRect(px + 2, py + 14, 4, 1);
+            context.fillStyle = "#cf3448";
+            context.fillRect(px + 3, py + 9, 2, 6);
+            context.fillRect(px + 2, py + 10, 4, 2);
+            context.fillStyle = "#ff8790";
+            context.fillRect(px + 3, py + 9, 1, 2);
 
-          // Closed metal helmet with a narrow visor.
-          context.fillStyle = "#3c4555";
-          context.fillRect(px + 4, py + 2, 9, 6);
-          context.fillRect(px + 5, py + 1, 7, 2);
-          context.fillStyle = "#aeb9c7";
-          context.fillRect(px + 5, py + 2, 7, 4);
-          context.fillStyle = "#e8eef3";
-          context.fillRect(px + 6, py + 2, 5, 2);
-          context.fillStyle = "#697587";
-          context.fillRect(px + 5, py + 5, 8, 2);
-          context.fillStyle = "#1e2631";
-          context.fillRect(px + 6, py + 5, 6, 1);
-          context.fillStyle = "#d6dde5";
-          context.fillRect(px + 8, py + 5, 2, 4);
-          context.fillStyle = "#8d9aaa";
-          context.fillRect(px + 5, py + 7, 7, 1);
+            // Closed metal helmet with a narrow visor.
+            context.fillStyle = "#3c4555";
+            context.fillRect(px + 4, py + 2, 9, 6);
+            context.fillRect(px + 5, py + 1, 7, 2);
+            context.fillStyle = "#aeb9c7";
+            context.fillRect(px + 5, py + 2, 7, 4);
+            context.fillStyle = "#e8eef3";
+            context.fillRect(px + 6, py + 2, 5, 2);
+            context.fillStyle = "#697587";
+            context.fillRect(px + 5, py + 5, 8, 2);
+            context.fillStyle = "#1e2631";
+            context.fillRect(px + 6, py + 5, 6, 1);
+            context.fillStyle = "#d6dde5";
+            context.fillRect(px + 8, py + 5, 2, 4);
+            context.fillStyle = "#8d9aaa";
+            context.fillRect(px + 5, py + 7, 7, 1);
+          }
+          spriteContext.setTransform(1, 0, 0, 1, 0, 0);
+          gameContext.save();
+          gameContext.imageSmoothingEnabled = false;
+          gameContext.drawImage(
+            playerSpriteCanvas,
+            Math.round(player.x - cameraX - 3.5),
+            py,
+            playerSpriteCanvas.width * playerScale,
+            playerSpriteCanvas.height * playerScale,
+          );
+          gameContext.restore();
         }
 
         function drawScene(time = 0) {
