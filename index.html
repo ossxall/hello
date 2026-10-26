@@ -785,6 +785,7 @@
             x: 315, platformY: 132,
             title: "Mapa de la princesa Rulos",
             message: "La princesa Rulos desapareció tras la puerta del este. Última pista: esta mazmorra. El mapa está al revés.",
+            portrait: true,
           },
           {
             x: 620, platformY: 124,
@@ -1340,8 +1341,10 @@
           const chestX = Math.round(chest.x - cameraX);
           if (chestX < -tile || chestX > canvas.width + tile) return;
 
-          const width = Math.min(184, canvas.width - 12);
-          const textWidth = width - 14;
+          const hasPortrait = Boolean(chest.portrait);
+          const width = Math.min(hasPortrait ? 220 : 184, canvas.width - 12);
+          const portraitSpace = hasPortrait ? 44 : 0;
+          const textWidth = width - 14 - portraitSpace;
           context.font = '12px "Pixelify Sans", "Courier New", monospace';
           const lines = [];
           let line = "";
@@ -1360,7 +1363,7 @@
             lines[6] = `${lines[6].slice(0, 25)}…`;
           }
 
-          const height = lines.length * 12 + 14;
+          const height = Math.max(lines.length * 12, hasPortrait ? 44 : 0) + 14;
           const centerX = chestX + 8;
           const x = Math.max(6, Math.min(canvas.width - width - 6, centerX - width / 2));
           const y = Math.max(4, chest.platformY - height - 20);
@@ -1385,6 +1388,9 @@
           context.fillRect(x, y, width, height);
           context.fillStyle = "#fff4df";
           context.fillRect(x + 2, y + 2, width - 4, height - 4);
+          if (hasPortrait) {
+            drawPrincessPortrait(x + width - 42, y + Math.floor((height - 44) / 2));
+          }
           context.font = '12px "Pixelify Sans", "Courier New", monospace';
           context.textBaseline = "top";
           context.fillStyle = "#130f1c";
@@ -1392,6 +1398,66 @@
             context.fillText(textLine, x + 7, y + 7 + index * 12);
           });
           context.textBaseline = "alphabetic";
+        }
+
+        function drawPrincessPortrait(x, y) {
+          context.fillStyle = "#130f1c";
+          context.fillRect(x, y, 38, 44);
+          context.fillStyle = "#90d8ee";
+          context.fillRect(x + 2, y + 2, 34, 40);
+          context.fillStyle = "#b4e8f2";
+          context.fillRect(x + 4, y + 4, 13, 8);
+          context.fillStyle = "#74b96a";
+          context.fillRect(x + 2, y + 32, 34, 10);
+          context.fillStyle = "#4b9659";
+          context.fillRect(x + 2, y + 37, 34, 5);
+
+          // Golden-brown ringlets frame her face.
+          context.fillStyle = "#70411f";
+          context.fillRect(x + 8, y + 10, 22, 18);
+          context.fillRect(x + 5, y + 14, 6, 12);
+          context.fillRect(x + 27, y + 14, 6, 13);
+          context.fillRect(x + 9, y + 25, 5, 7);
+          context.fillRect(x + 24, y + 25, 5, 7);
+          context.fillStyle = "#b87536";
+          context.fillRect(x + 9, y + 8, 7, 6);
+          context.fillRect(x + 16, y + 6, 7, 7);
+          context.fillRect(x + 23, y + 9, 7, 6);
+          context.fillRect(x + 5, y + 16, 6, 6);
+          context.fillRect(x + 27, y + 17, 6, 6);
+          context.fillRect(x + 7, y + 24, 6, 6);
+          context.fillRect(x + 25, y + 25, 6, 6);
+          context.fillStyle = "#e0a34d";
+          context.fillRect(x + 12, y + 8, 4, 3);
+          context.fillRect(x + 19, y + 7, 4, 3);
+          context.fillRect(x + 25, y + 11, 3, 3);
+          context.fillRect(x + 6, y + 17, 3, 3);
+
+          // Small golden crown.
+          context.fillStyle = "#8b5a25";
+          context.fillRect(x + 12, y + 6, 16, 5);
+          context.fillStyle = "#ffd45f";
+          context.fillRect(x + 13, y + 5, 14, 4);
+          context.fillRect(x + 12, y + 3, 4, 4);
+          context.fillRect(x + 18, y + 1, 4, 6);
+          context.fillRect(x + 24, y + 3, 4, 4);
+
+          // Face and a simple rose-colored dress.
+          context.fillStyle = "#d99665";
+          context.fillRect(x + 11, y + 14, 17, 15);
+          context.fillStyle = "#f2c397";
+          context.fillRect(x + 13, y + 14, 13, 12);
+          context.fillStyle = "#503124";
+          context.fillRect(x + 15, y + 19, 2, 2);
+          context.fillRect(x + 23, y + 19, 2, 2);
+          context.fillStyle = "#c96262";
+          context.fillRect(x + 18, y + 24, 5, 1);
+          context.fillStyle = "#a34b69";
+          context.fillRect(x + 9, y + 30, 22, 11);
+          context.fillStyle = "#e17986";
+          context.fillRect(x + 12, y + 29, 16, 8);
+          context.fillStyle = "#ffd45f";
+          context.fillRect(x + 19, y + 31, 3, 4);
         }
 
         function drawPlayer(time) {
