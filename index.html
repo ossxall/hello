@@ -252,6 +252,11 @@
         text-transform: uppercase;
       }
 
+      .dialogue-next:disabled {
+        cursor: wait;
+        opacity: 0.6;
+      }
+
       #game {
         width: 100%;
         height: auto;
@@ -712,6 +717,7 @@
         const jumpSpeed = 236;
         const swordSwingDuration = 0.44;
         const respawnDuration = 0.58;
+        const princessFinalLineMinimumDuration = 10000;
         const dungeonGaps = [
           { x: 400, width: 44 },
           { x: 820, width: 52 },
@@ -772,6 +778,7 @@
         ];
         let princessDialogueActive = false;
         let princessDialogueIndex = 0;
+        let princessDialogueCloseAllowedAt = 0;
         let dialogueFrozenTime = 0;
         let currentRoom = 1;
         let doorTransitionPhase = "";
@@ -869,6 +876,18 @@
           dialogueNextButton.textContent = princessDialogueIndex === princessDialogue.length - 1
             ? "Terminar"
             : "Siguiente";
+          const isFinalLine = princessDialogueIndex === princessDialogue.length - 1;
+          dialogueNextButton.disabled = isFinalLine;
+          princessDialogueCloseAllowedAt = isFinalLine
+            ? performance.now() + princessFinalLineMinimumDuration
+            : 0;
+          if (isFinalLine) {
+            window.setTimeout(() => {
+              if (princessDialogueActive && princessDialogueIndex === princessDialogue.length - 1) {
+                dialogueNextButton.disabled = false;
+              }
+            }, princessFinalLineMinimumDuration);
+          }
         }
 
         function startPrincessDialogue() {
@@ -892,6 +911,7 @@
 
         function advancePrincessDialogue() {
           if (!princessDialogueActive) return;
+          if (princessDialogueIndex === princessDialogue.length - 1 && performance.now() < princessDialogueCloseAllowedAt) return;
           if (princessDialogueIndex < princessDialogue.length - 1) {
             princessDialogueIndex += 1;
             renderPrincessDialogue();
