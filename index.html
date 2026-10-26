@@ -764,7 +764,7 @@
         const jumpKeys = new Set(["arrowup", "w", " "]);
         const dungeonPlatforms = [
           { x: 0, y: floorY, width: worldWidth, ground: true },
-          { x: 270, y: 132, width: 112 },
+          { x: 410, y: 132, width: 112 },
           { x: 560, y: 124, width: 132 },
           { x: 865, y: 136, width: 148 },
           { x: 1180, y: 120, width: 144 },
@@ -782,7 +782,7 @@
         ];
         const dungeonChests = [
           {
-            x: 315, platformY: 132,
+            x: 315, platformY: floorY,
             title: "Mapa de la princesa Rulos",
             message: "La princesa Rulos desapareció tras la puerta del este. Última pista: esta mazmorra. El mapa está al revés.",
             portrait: true,
@@ -903,7 +903,9 @@
           }
           const chest = nearbyChest();
           if (chest && !chest.opened) {
-            setHint("¡Cofre a tiro! Pulsa ABRIR o E.");
+            setHint(chest === dungeonChests[0] && currentRoom === 1
+              ? "El primer cofre sella el camino. Ábrelo para poder avanzar."
+              : "¡Cofre a tiro! Pulsa ABRIR o E.");
           } else if (chest?.opened) {
             setHint("Cofre abierto. Su mensaje se queda aquí; puedes seguir avanzando.");
           } else {
@@ -926,6 +928,9 @@
         }
 
         function overlapsChest(x, y, chest) {
+          if (currentRoom === 1 && chest === dungeonChests[0] && !chest.opened) {
+            return x < chest.x + 14 && x + player.width > chest.x + 2;
+          }
           const left = chest.x + 2;
           const right = chest.x + 14;
           const top = chest.platformY - 12;
@@ -1138,6 +1143,25 @@
             const x = ((i * 61 - cameraX * 0.18) % (canvas.width + 20) + canvas.width + 20) % (canvas.width + 20);
             context.fillRect(Math.floor(x), 28 + (i % 3) * 18, 2, 2);
           }
+        }
+
+        function drawChestSeal() {
+          const chest = dungeonChests[0];
+          if (currentRoom !== 1 || chest.opened) return;
+          const x = Math.round(chest.x + 8 - cameraX);
+          if (x < -8 || x > canvas.width + 8) return;
+          context.fillStyle = "rgba(130, 220, 255, 0.12)";
+          context.fillRect(x - 6, 0, 12, floorY);
+          context.fillStyle = "rgba(130, 220, 255, 0.32)";
+          context.fillRect(x - 2, 0, 4, floorY);
+          context.fillStyle = "#82dcff";
+          for (let y = 8; y < floorY - 4; y += 24) {
+            context.fillRect(x - 5, y, 10, 2);
+            context.fillRect(x - 2, y + 2, 4, 3);
+          }
+          context.fillStyle = "#fff4df";
+          context.fillRect(x - 1, 10, 2, 3);
+          context.fillRect(x - 4, 13, 8, 2);
         }
 
         function drawForestBackdrop(time) {
@@ -1540,6 +1564,7 @@
             for (let x = Math.floor(cameraX * 0.72 / 360) * 360 - 120; x < cameraX * 0.72 + canvas.width + 360; x += 360) {
               drawTorch(x + 120, 82 + ((x / 360) % 2) * 18, torchFrame + x / 360);
             }
+            drawChestSeal();
           } else {
             drawForestBackdrop(time);
           }
