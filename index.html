@@ -617,11 +617,25 @@
           { x: 1215, width: 60 },
           { x: 1630, width: 65 },
         ];
+        const forestGaps = [
+          { x: 390, width: 60 },
+          { x: 1040, width: 72 },
+          { x: 1665, width: 80 },
+        ];
         const dungeonObstacles = [
           { x: 560, width: 28, height: 22, kind: "barrel", destructible: true, destroyed: false },
           { x: 930, width: 34, height: 26, kind: "stone" },
           { x: 1320, width: 32, height: 22, kind: "crate" },
           { x: 1740, width: 38, height: 28, kind: "stone" },
+        ];
+        const forestObstacles = [
+          { x: 610, width: 48, height: 18, kind: "log" },
+          { x: 1190, width: 38, height: 24, kind: "mushroom" },
+          { x: 1810, width: 56, height: 20, kind: "log" },
+          { x: 1930, width: 38, height: 38, kind: "stump" },
+        ];
+        const forestPendulums = [
+          { anchorX: 1335, anchorY: 34, length: 90, amplitude: 0.7, speed: 0.0026, phase: 0, radius: 13 },
         ];
         let currentRoom = 1;
         let doorTransitionPhase = "";
@@ -655,13 +669,10 @@
           { x: 1643, y: 136, width: 38 },
         ];
         const forestPlatforms = [
-          { x: 0, y: floorY, width: worldWidth, ground: true },
-          { x: 260, y: 132, width: 120 },
-          { x: 550, y: 124, width: 138 },
-          { x: 850, y: 136, width: 152 },
-          { x: 1170, y: 120, width: 150 },
-          { x: 1510, y: 132, width: 155 },
-          { x: 1850, y: 124, width: 158 },
+          { x: 0, y: floorY, width: 390, ground: true },
+          { x: 450, y: floorY, width: 590, ground: true },
+          { x: 1112, y: floorY, width: 553, ground: true },
+          { x: 1745, y: floorY, width: worldWidth - 1745, ground: true },
         ];
         const dungeonChests = [
           {
@@ -673,19 +684,9 @@
         ];
         const forestChests = [
           {
-            x: 305, platformY: 132,
+            x: 305, platformY: floorY,
             title: "La pista de la ardilla",
             message: "La ardilla encontró uno de los rulos dorados de la princesa. El rastro sigue hacia el claro soleado.",
-          },
-          {
-            x: 895, platformY: 136,
-            title: "El testimonio del zorro",
-            message: "El zorro dice que el dragón estaba demasiado ocupado comiendo galletas para secuestrar a nadie. Se declara testigo imparcial.",
-          },
-          {
-            x: 1570, platformY: 132,
-            title: "Final feliz",
-            message: "¡Rescate completado! La princesa Rulos estaba bajo el gran roble, leyendo un mapa al revés. El reino celebra tu hazaña.",
           },
         ];
         let platforms = dungeonPlatforms;
@@ -755,7 +756,7 @@
             setHint("Cofre abierto. Su mensaje se queda aquí; puedes seguir avanzando.");
           } else {
             setHint(currentRoom === 2
-              ? "Sala 02: bosque de mañana. Salta, explora y busca los cofres."
+              ? "Sala 02: salta los huecos, esquiva troncos y evita el péndulo."
               : "Avanza, salta los huecos y esquiva los bloques.");
           }
         }
@@ -785,6 +786,7 @@
         function updatePhysics(deltaTime) {
           if (doorTransitionPhase) return;
           const axis = Number(heldDirections.has("right")) - Number(heldDirections.has("left"));
+          const levelObstacles = currentRoom === 1 ? dungeonObstacles : forestObstacles;
           player.velocityX = axis * moveSpeed;
           if (axis) player.facing = axis;
 
@@ -805,8 +807,8 @@
                 : doorX + 28;
             }
           }
-          if (currentRoom === 1 && axis) {
-            for (const obstacle of dungeonObstacles) {
+          if (axis) {
+            for (const obstacle of levelObstacles) {
               if (obstacle.destroyed) continue;
               const obstacleTop = floorY - obstacle.height;
               const overlapsVertically = player.y + player.height > obstacleTop && player.y < floorY;
@@ -835,29 +837,28 @@
                 player.onGround = true;
               }
             }
-            if (currentRoom === 1) {
-              for (const obstacle of dungeonObstacles) {
-                if (obstacle.destroyed) continue;
-                const obstacleTop = floorY - obstacle.height;
-                const overlapsObstacle = player.x + player.width > obstacle.x && player.x < obstacle.x + obstacle.width;
-                if (overlapsObstacle && previousBottom <= obstacleTop && player.y + player.height >= obstacleTop) {
-                  player.y = obstacleTop - player.height;
-                  player.velocityY = 0;
-                  player.onGround = true;
-                }
+            for (const obstacle of levelObstacles) {
+              if (obstacle.destroyed) continue;
+              const obstacleTop = floorY - obstacle.height;
+              const overlapsObstacle = player.x + player.width > obstacle.x && player.x < obstacle.x + obstacle.width;
+              if (overlapsObstacle && previousBottom <= obstacleTop && player.y + player.height >= obstacleTop) {
+                player.y = obstacleTop - player.height;
+                player.velocityY = 0;
+                player.onGround = true;
               }
             }
           }
 
-          if (currentRoom === 1 && player.onGround) {
-            const standingOnGround = dungeonPlatforms.some((platform) => platform.ground
+          if (player.onGround) {
+            const standingOnGround = platforms.some((platform) => platform.ground
               && player.x + player.width > platform.x
               && player.x < platform.x + platform.width
               && Math.abs(player.y + player.height - platform.y) < 1);
             if (standingOnGround) checkpointX = player.x;
           }
-          if (currentRoom === 1 && player.y > canvas.height + 24) {
-            const fallenGap = dungeonGaps.find((gap) => player.x + player.width > gap.x
+          if (player.y > canvas.height + 24) {
+            const levelGaps = currentRoom === 1 ? dungeonGaps : forestGaps;
+            const fallenGap = levelGaps.find((gap) => player.x + player.width > gap.x
               && player.x < gap.x + gap.width);
             const respawnX = fallenGap
               ? Math.min(checkpointX, fallenGap.x - player.width - 56)
@@ -1166,7 +1167,9 @@
           chests = forestChests;
           enemies = [];
           enemiesStarted = false;
+          obstacleFragments = [];
           swordSwingTimer = 0;
+          checkpointX = 28;
           combatHintTimer = 0;
           hurtTimer = 0;
           invulnerabilityTimer = 0;
@@ -1367,15 +1370,15 @@
           }
         }
 
-        function drawDungeonGaps() {
-          for (const gap of dungeonGaps) {
+        function drawLevelGaps(gaps) {
+          for (const gap of gaps) {
             const x = Math.round(gap.x - cameraX);
             if (x + gap.width < 0 || x > canvas.width) continue;
-            context.fillStyle = "#15111d";
+            context.fillStyle = currentRoom === 1 ? "#15111d" : "#14222a";
             context.fillRect(x, floorY, gap.width, canvas.height - floorY);
-            context.fillStyle = "#0b0911";
+            context.fillStyle = currentRoom === 1 ? "#0b0911" : "#0a151b";
             context.fillRect(x + 2, floorY + 8, Math.max(0, gap.width - 4), canvas.height - floorY - 8);
-            context.fillStyle = "#77688d";
+            context.fillStyle = currentRoom === 1 ? "#77688d" : "#526b5c";
             context.fillRect(x, floorY, 2, 6);
             context.fillRect(x + gap.width - 2, floorY, 2, 6);
             context.fillStyle = "rgba(255,255,255,0.08)";
@@ -1383,9 +1386,8 @@
           }
         }
 
-        function drawDungeonObstacles() {
-          if (currentRoom !== 1) return;
-          for (const obstacle of dungeonObstacles) {
+        function drawLevelObstacles(obstacles) {
+          for (const obstacle of obstacles) {
             if (obstacle.destroyed) continue;
             const x = Math.round(obstacle.x - cameraX);
             const y = floorY - obstacle.height;
@@ -1467,6 +1469,110 @@
               context.strokeStyle = "rgba(241, 194, 125, 0.65)";
               context.lineWidth = 0.65;
               context.stroke();
+            } else if (obstacle.kind === "log") {
+              const bark = context.createLinearGradient(x, y, x, y + obstacle.height);
+              bark.addColorStop(0, "#a36a3f");
+              bark.addColorStop(0.45, "#75442f");
+              bark.addColorStop(1, "#4c342b");
+              context.beginPath();
+              context.moveTo(x + 5, y + 2);
+              context.quadraticCurveTo(x + obstacle.width / 2, y - 1, x + obstacle.width - 5, y + 2);
+              context.lineTo(x + obstacle.width - 2, y + obstacle.height - 3);
+              context.quadraticCurveTo(x + obstacle.width / 2, y + obstacle.height + 1, x + 3, y + obstacle.height - 3);
+              context.closePath();
+              context.fillStyle = bark;
+              context.fill();
+              context.strokeStyle = "#342629";
+              context.lineWidth = 1.2;
+              context.stroke();
+              context.beginPath();
+              context.ellipse(x + 5, y + obstacle.height / 2, 3, obstacle.height / 2 - 3, 0, 0, Math.PI * 2);
+              context.fillStyle = "#bd8853";
+              context.fill();
+              context.strokeStyle = "#56372d";
+              context.lineWidth = 0.8;
+              context.stroke();
+              context.beginPath();
+              context.ellipse(x + 5, y + obstacle.height / 2, 1.5, Math.max(1, obstacle.height / 2 - 5), 0, 0, Math.PI * 2);
+              context.strokeStyle = "#805337";
+              context.lineWidth = 0.7;
+              context.stroke();
+              context.beginPath();
+              context.moveTo(x + 11, y + 6);
+              context.quadraticCurveTo(x + obstacle.width / 2, y + 4, x + obstacle.width - 5, y + 7);
+              context.moveTo(x + 12, y + obstacle.height - 6);
+              context.quadraticCurveTo(x + obstacle.width / 2, y + obstacle.height - 4, x + obstacle.width - 5, y + obstacle.height - 7);
+              context.strokeStyle = "rgba(225, 173, 111, 0.55)";
+              context.lineWidth = 1;
+              context.stroke();
+              context.fillStyle = "#548453";
+              context.fillRect(x + obstacle.width / 2, y + 1, 7, 2);
+              context.fillStyle = "#8db266";
+              context.fillRect(x + obstacle.width / 2 + 2, y + 1, 3, 1);
+            } else if (obstacle.kind === "mushroom") {
+              context.fillStyle = "#dfd1a0";
+              context.fillRect(x + obstacle.width / 2 - 5, y + 10, 10, obstacle.height - 10);
+              context.fillStyle = "#ad9875";
+              context.fillRect(x + obstacle.width / 2 + 2, y + 12, 2, obstacle.height - 13);
+              const cap = context.createLinearGradient(x, y, x, y + 13);
+              cap.addColorStop(0, "#ec8a64");
+              cap.addColorStop(1, "#b54551");
+              context.beginPath();
+              context.moveTo(x + 2, y + 12);
+              context.quadraticCurveTo(x + 2, y + 4, x + 10, y + 3);
+              context.quadraticCurveTo(x + obstacle.width / 2, y - 1, x + obstacle.width - 10, y + 3);
+              context.quadraticCurveTo(x + obstacle.width - 2, y + 4, x + obstacle.width - 2, y + 12);
+              context.quadraticCurveTo(x + obstacle.width / 2, y + 15, x + 2, y + 12);
+              context.closePath();
+              context.fillStyle = cap;
+              context.fill();
+              context.strokeStyle = "#743b42";
+              context.lineWidth = 1;
+              context.stroke();
+              context.fillStyle = "#fff0ce";
+              context.beginPath();
+              context.ellipse(x + 11, y + 7, 2.2, 1.5, -0.25, 0, Math.PI * 2);
+              context.ellipse(x + obstacle.width - 10, y + 8, 2.5, 1.7, 0.2, 0, Math.PI * 2);
+              context.ellipse(x + obstacle.width / 2, y + 4, 1.7, 1.2, 0, 0, Math.PI * 2);
+              context.fill();
+              context.strokeStyle = "rgba(255,255,255,0.5)";
+              context.lineWidth = 0.8;
+              context.beginPath();
+              context.moveTo(x + 7, y + 12);
+              context.quadraticCurveTo(x + obstacle.width / 2, y + 14, x + obstacle.width - 7, y + 12);
+              context.stroke();
+            } else if (obstacle.kind === "stump") {
+              context.fillStyle = "#513526";
+              context.fillRect(x + 4, y + 7, obstacle.width - 8, obstacle.height - 7);
+              context.fillStyle = "#795033";
+              context.fillRect(x + 6, y + 10, obstacle.width - 12, obstacle.height - 10);
+              context.strokeStyle = "#38282a";
+              context.lineWidth = 1;
+              for (let groove = 0; groove < 3; groove += 1) {
+                const grooveX = x + 10 + groove * 8;
+                context.beginPath();
+                context.moveTo(grooveX, y + 11);
+                context.quadraticCurveTo(grooveX - 2, y + obstacle.height / 2, grooveX, floorY - 2);
+                context.stroke();
+              }
+              context.beginPath();
+              context.ellipse(x + obstacle.width / 2, y + 7, obstacle.width / 2 - 2, 6, 0, 0, Math.PI * 2);
+              context.fillStyle = "#c08851";
+              context.fill();
+              context.strokeStyle = "#422c27";
+              context.lineWidth = 1.2;
+              context.stroke();
+              context.beginPath();
+              context.ellipse(x + obstacle.width / 2, y + 7, obstacle.width / 2 - 7, 3.8, 0, 0, Math.PI * 2);
+              context.strokeStyle = "#785033";
+              context.lineWidth = 1;
+              context.stroke();
+              context.beginPath();
+              context.ellipse(x + obstacle.width / 2, y + 7, 4, 1.8, 0, 0, Math.PI * 2);
+              context.stroke();
+              context.fillStyle = "#67934d";
+              context.fillRect(x + 4, y + obstacle.height - 5, 8, 3);
+              context.fillRect(x + obstacle.width - 11, y + obstacle.height - 4, 6, 2);
             } else {
               context.fillStyle = "#17111d";
               context.fillRect(x - 1, y - 1, obstacle.width + 2, obstacle.height + 2);
@@ -1501,15 +1607,126 @@
               }
             }
           }
-          for (const fragment of obstacleFragments) {
-            const x = fragment.x - cameraX;
-            if (x < -8 || x > canvas.width + 8) continue;
+          if (currentRoom === 1) {
+            for (const fragment of obstacleFragments) {
+              const x = fragment.x - cameraX;
+              if (x < -8 || x > canvas.width + 8) continue;
+              context.save();
+              context.globalAlpha = Math.min(1, fragment.life / 0.46);
+              context.translate(x, fragment.y);
+              context.rotate(fragment.rotation);
+              context.fillStyle = fragment.color;
+              context.fillRect(-fragment.size / 2, -fragment.size / 2, fragment.size, fragment.size);
+              context.restore();
+            }
+          }
+        }
+
+        function pendulumPose(pendulum, time) {
+          const angle = prefersReducedMotion
+            ? pendulum.amplitude
+            : Math.sin(time * pendulum.speed + pendulum.phase) * pendulum.amplitude;
+          return {
+            angle,
+            x: pendulum.anchorX + Math.sin(angle) * pendulum.length,
+            y: pendulum.anchorY + Math.cos(angle) * pendulum.length,
+          };
+        }
+
+        function updatePendulums(time) {
+          if (currentRoom !== 2 || invulnerabilityTimer > 0) return;
+          for (const pendulum of forestPendulums) {
+            const bob = pendulumPose(pendulum, time);
+            const nearestX = Math.max(player.x, Math.min(bob.x, player.x + player.width));
+            const nearestY = Math.max(player.y, Math.min(bob.y, player.y + player.height));
+            if (Math.hypot(bob.x - nearestX, bob.y - nearestY) <= pendulum.radius) {
+              hurtTimer = 0.8;
+              invulnerabilityTimer = 1.15;
+              setCombatHint("¡Cuidado con el péndulo! Espera el momento para pasar.", 1.8);
+              return;
+            }
+          }
+        }
+
+        function drawPendulums(time) {
+          if (currentRoom !== 2) return;
+          for (const pendulum of forestPendulums) {
+            const bob = pendulumPose(pendulum, time);
+            const anchorX = Math.round(pendulum.anchorX - cameraX);
+            const bobX = bob.x - cameraX;
+
+            context.fillStyle = "#5d4938";
+            context.fillRect(anchorX - 9, pendulum.anchorY - 5, 18, 6);
+            context.fillStyle = "#d4b06d";
+            context.fillRect(anchorX - 6, pendulum.anchorY - 6, 12, 2);
+            context.fillRect(anchorX - 7, pendulum.anchorY - 3, 2, 2);
+            context.fillRect(anchorX + 5, pendulum.anchorY - 3, 2, 2);
+
+            context.beginPath();
+            context.moveTo(anchorX, pendulum.anchorY);
+            context.lineTo(bobX, bob.y);
+            context.strokeStyle = "#302b32";
+            context.lineWidth = 3;
+            context.stroke();
+            context.beginPath();
+            context.moveTo(anchorX, pendulum.anchorY);
+            context.lineTo(bobX, bob.y);
+            context.strokeStyle = "#c5b58c";
+            context.lineWidth = 0.8;
+            context.stroke();
+            for (let link = 1; link < 8; link += 1) {
+              const progress = link / 8;
+              context.beginPath();
+              context.ellipse(
+                anchorX + (bobX - anchorX) * progress,
+                pendulum.anchorY + (bob.y - pendulum.anchorY) * progress,
+                1.35,
+                2,
+                bob.angle,
+                0,
+                Math.PI * 2,
+              );
+              context.strokeStyle = "#d4c397";
+              context.lineWidth = 0.65;
+              context.stroke();
+            }
+
             context.save();
-            context.globalAlpha = Math.min(1, fragment.life / 0.46);
-            context.translate(x, fragment.y);
-            context.rotate(fragment.rotation);
-            context.fillStyle = fragment.color;
-            context.fillRect(-fragment.size / 2, -fragment.size / 2, fragment.size, fragment.size);
+            context.translate(bobX, bob.y);
+            context.rotate(bob.angle * 0.35);
+            for (let spike = 0; spike < 8; spike += 1) {
+              const angle = spike * Math.PI / 4;
+              context.beginPath();
+              context.moveTo(Math.cos(angle) * 6, Math.sin(angle) * 6);
+              context.lineTo(Math.cos(angle) * 13, Math.sin(angle) * 13);
+              context.lineTo(Math.cos(angle + 0.28) * 7, Math.sin(angle + 0.28) * 7);
+              context.closePath();
+              context.fillStyle = "#58616b";
+              context.fill();
+              context.strokeStyle = "#25252d";
+              context.lineWidth = 0.8;
+              context.stroke();
+            }
+            const metal = context.createRadialGradient(-3, -4, 1, 0, 0, 9);
+            metal.addColorStop(0, "#edf0df");
+            metal.addColorStop(0.35, "#aeb8b7");
+            metal.addColorStop(0.75, "#687580");
+            metal.addColorStop(1, "#343640");
+            context.beginPath();
+            context.arc(0, 0, 8.5, 0, Math.PI * 2);
+            context.fillStyle = metal;
+            context.fill();
+            context.strokeStyle = "#27252d";
+            context.lineWidth = 1;
+            context.stroke();
+            context.beginPath();
+            context.arc(-2.2, -2.5, 1.5, 0, Math.PI * 2);
+            context.fillStyle = "#fff4df";
+            context.fill();
+            context.beginPath();
+            context.arc(0, 0, 2.2, 0, Math.PI * 2);
+            context.fillStyle = "#d4b06d";
+            context.fill();
             context.restore();
           }
         }
@@ -2092,19 +2309,21 @@
           context.clearRect(0, 0, canvas.width, canvas.height);
           if (currentRoom === 1) {
             drawBackdrop();
-            drawDungeonGaps();
+            drawLevelGaps(dungeonGaps);
             for (let x = Math.floor(cameraX * 0.72 / 360) * 360 - 120; x < cameraX * 0.72 + canvas.width + 360; x += 360) {
               drawTorch(x + 120, 82 + ((x / 360) % 2) * 18, torchFrame + x / 360);
             }
             drawChestSeal();
           } else {
             drawForestBackdrop(time);
+            drawLevelGaps(forestGaps);
           }
           platforms.forEach(drawPlatform);
           if (currentRoom === 1) {
-            drawDungeonObstacles();
             drawDoor();
           }
+          drawLevelObstacles(currentRoom === 1 ? dungeonObstacles : forestObstacles);
+          drawPendulums(time);
           const nearby = nearbyChest();
           chests.forEach((chest) => drawChest(chest, chest === nearby));
           enemies.forEach((enemy) => drawEnemy(enemy, time));
@@ -2203,6 +2422,7 @@
             if (swordHeld && swordCooldown <= 0) attackWithSword();
             resolveSwordHits();
             updateEnemies(deltaTime);
+            updatePendulums(time);
           }
           drawScene(time);
           window.requestAnimationFrame(gameLoop);
