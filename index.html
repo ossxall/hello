@@ -618,7 +618,7 @@
           { x: 1630, width: 65 },
         ];
         const dungeonObstacles = [
-          { x: 560, width: 28, height: 18, kind: "crate" },
+          { x: 560, width: 28, height: 22, kind: "barrel", destructible: true, destroyed: false },
           { x: 930, width: 34, height: 26, kind: "stone" },
           { x: 1320, width: 32, height: 22, kind: "crate" },
           { x: 1740, width: 38, height: 28, kind: "stone" },
@@ -630,6 +630,7 @@
         let transitionFlash = 0;
         let enemiesStarted = false;
         let enemies = [];
+        let obstacleFragments = [];
         let swordSwingTimer = 0;
         let swordCooldown = 0;
         let swordHeld = false;
@@ -806,6 +807,7 @@
           }
           if (currentRoom === 1 && axis) {
             for (const obstacle of dungeonObstacles) {
+              if (obstacle.destroyed) continue;
               const obstacleTop = floorY - obstacle.height;
               const overlapsVertically = player.y + player.height > obstacleTop && player.y < floorY;
               const overlapsHorizontally = nextX < obstacle.x + obstacle.width
@@ -835,6 +837,7 @@
             }
             if (currentRoom === 1) {
               for (const obstacle of dungeonObstacles) {
+                if (obstacle.destroyed) continue;
                 const obstacleTop = floorY - obstacle.height;
                 const overlapsObstacle = player.x + player.width > obstacle.x && player.x < obstacle.x + obstacle.width;
                 if (overlapsObstacle && previousBottom <= obstacleTop && player.y + player.height >= obstacleTop) {
@@ -919,14 +922,14 @@
           swordCooldown = 0.5;
           swordSwingHitEnemies.clear();
           if (!enemiesStarted || currentRoom !== 1) {
-            setCombatHint("La espada corta el aire. Los enemigos aparecerán al abrir el cofre.", 1.4);
+            setCombatHint("¡Tajo!", 0.7);
             return;
           }
           setCombatHint("¡Tajo!", 0.7);
         }
 
         function resolveSwordHits() {
-          if (swordSwingTimer <= 0 || currentRoom !== 1 || !enemiesStarted) return;
+          if (swordSwingTimer <= 0 || currentRoom !== 1) return;
           const progress = 1 - swordSwingTimer / swordSwingDuration;
           const pose = swordSwingPose(progress);
           if (pose.move !== "sweep") return;
@@ -934,22 +937,61 @@
           const handX = player.x + player.width / 2 + player.facing * (3 + pose.handX);
           const handY = player.y + player.height * 0.56 + pose.handY;
           let defeatedCount = 0;
-          for (const enemy of enemies) {
-            if (enemy.defeated || swordSwingHitEnemies.has(enemy)) continue;
-            const closestX = Math.max(enemy.x, Math.min(handX, enemy.x + enemy.width));
-            const closestY = Math.max(enemy.y, Math.min(handY, enemy.y + enemy.height));
+          let brokenCount = 0;
+
+          if (enemiesStarted) {
+            for (const enemy of enemies) {
+              if (enemy.defeated || swordSwingHitEnemies.has(enemy)) continue;
+              const closestX = Math.max(enemy.x, Math.min(handX, enemy.x + enemy.width));
+              const closestY = Math.max(enemy.y, Math.min(handY, enemy.y + enemy.height));
+              const offsetX = closestX - handX;
+              const forwardDistance = offsetX * player.facing;
+              const distance = Math.hypot(offsetX, closestY - handY);
+              if (forwardDistance < -8 || forwardDistance > 48 || distance > 48) continue;
+
+              enemy.defeated = true;
+              enemy.defeatTimer = 0.42;
+              swordSwingHitEnemies.add(enemy);
+              defeatedCount += 1;
+            }
+          }
+
+          for (const obstacle of dungeonObstacles) {
+            if (!obstacle.destructible || obstacle.destroyed) continue;
+            const obstacleTop = floorY - obstacle.height;
+            const closestX = Math.max(obstacle.x, Math.min(handX, obstacle.x + obstacle.width));
+            const closestY = Math.max(obstacleTop, Math.min(handY, floorY));
             const offsetX = closestX - handX;
             const forwardDistance = offsetX * player.facing;
             const distance = Math.hypot(offsetX, closestY - handY);
             if (forwardDistance < -8 || forwardDistance > 48 || distance > 48) continue;
 
-            enemy.defeated = true;
-            enemy.defeatTimer = 0.42;
-            swordSwingHitEnemies.add(enemy);
-            defeatedCount += 1;
+            obstacle.destroyed = true;
+            brokenCount += 1;
+            const fragmentColors = obstacle.kind === "barrel"
+              ? ["#b87536", "#8a4b2e", "#d6ad69", "#70412f", "#b87536", "#8a4b2e"]
+              : ["#d8863b", "#9b542e", "#f6c755", "#70412f", "#d8863b", "#9b542e"];
+            for (let piece = 0; piece < fragmentColors.length; piece += 1) {
+              const spread = piece - (fragmentColors.length - 1) / 2;
+              obstacleFragments.push({
+                x: obstacle.x + obstacle.width / 2,
+                y: obstacleTop + obstacle.height / 2,
+                velocityX: spread * 28,
+                velocityY: -58 - Math.abs(spread) * 7,
+                rotation: spread * 0.35,
+                rotationSpeed: spread * 4,
+                size: piece % 2 ? 2 : 3,
+                life: 0.46,
+                color: fragmentColors[piece],
+              });
+            }
           }
 
-          if (defeatedCount) {
+          if (defeatedCount && brokenCount) {
+            setCombatHint(`¡Golpe doble! Derrotaste a ${defeatedCount} monstruos y rompiste una caja.`, 1.8);
+          } else if (brokenCount) {
+            setCombatHint("¡Caja rota!", 1.5);
+          } else if (defeatedCount) {
             setCombatHint(defeatedCount === 1
               ? "¡Buen golpe! Has derrotado a un monstruo."
               : `¡Buen golpe! Has derrotado a ${defeatedCount} monstruos.`, 1.8);
@@ -963,6 +1005,18 @@
           hurtTimer = Math.max(0, hurtTimer - deltaTime);
           invulnerabilityTimer = Math.max(0, invulnerabilityTimer - deltaTime);
           combatHintTimer = Math.max(0, combatHintTimer - deltaTime);
+          for (let index = obstacleFragments.length - 1; index >= 0; index -= 1) {
+            const fragment = obstacleFragments[index];
+            fragment.life -= deltaTime;
+            if (fragment.life <= 0) {
+              obstacleFragments.splice(index, 1);
+              continue;
+            }
+            fragment.x += fragment.velocityX * deltaTime;
+            fragment.y += fragment.velocityY * deltaTime;
+            fragment.velocityY += 260 * deltaTime;
+            fragment.rotation += fragment.rotationSpeed * deltaTime;
+          }
         }
 
         function updateEnemies(deltaTime) {
@@ -1332,41 +1386,131 @@
         function drawDungeonObstacles() {
           if (currentRoom !== 1) return;
           for (const obstacle of dungeonObstacles) {
+            if (obstacle.destroyed) continue;
             const x = Math.round(obstacle.x - cameraX);
             const y = floorY - obstacle.height;
             if (x + obstacle.width < 0 || x > canvas.width) continue;
 
-            context.fillStyle = "#17111d";
-            context.fillRect(x - 1, y - 1, obstacle.width + 2, obstacle.height + 2);
-            if (obstacle.kind === "crate") {
-              context.fillStyle = "#9b542e";
-              context.fillRect(x, y, obstacle.width, obstacle.height);
-              context.fillStyle = "#d8863b";
-              context.fillRect(x + 2, y + 2, obstacle.width - 4, 3);
-              context.fillStyle = "#70412f";
-              context.fillRect(x + 3, y + 6, obstacle.width - 6, 2);
-              context.strokeStyle = "#613648";
-              context.lineWidth = 2;
+            if (obstacle.kind === "barrel") {
+              const wood = context.createLinearGradient(x, y, x + obstacle.width, y);
+              wood.addColorStop(0, "#4e2c24");
+              wood.addColorStop(0.2, "#9a552f");
+              wood.addColorStop(0.5, "#c37b3c");
+              wood.addColorStop(0.82, "#8b4b2a");
+              wood.addColorStop(1, "#4c2c27");
               context.beginPath();
-              context.moveTo(x + 3, y + obstacle.height - 3);
-              context.lineTo(x + obstacle.width - 3, y + 7);
-              context.moveTo(x + 3, y + 7);
-              context.lineTo(x + obstacle.width - 3, y + obstacle.height - 3);
+              context.moveTo(x + 5, y + 1);
+              context.quadraticCurveTo(x + obstacle.width / 2, y - 1, x + obstacle.width - 5, y + 1);
+              context.quadraticCurveTo(x + obstacle.width - 2, y + 3, x + obstacle.width - 2, y + 7);
+              context.lineTo(x + obstacle.width - 2, y + obstacle.height - 7);
+              context.quadraticCurveTo(x + obstacle.width - 2, y + obstacle.height - 2, x + obstacle.width - 5, y + obstacle.height - 1);
+              context.quadraticCurveTo(x + obstacle.width / 2, y + obstacle.height + 1, x + 5, y + obstacle.height - 1);
+              context.quadraticCurveTo(x + 2, y + obstacle.height - 2, x + 2, y + obstacle.height - 7);
+              context.lineTo(x + 2, y + 7);
+              context.quadraticCurveTo(x + 2, y + 3, x + 5, y + 1);
+              context.closePath();
+              context.fillStyle = wood;
+              context.fill();
+              context.strokeStyle = "#17111d";
+              context.lineWidth = 1.2;
               context.stroke();
-              context.fillStyle = "#f6c755";
-              context.fillRect(x + 2, y + 2, 2, 2);
-              context.fillRect(x + obstacle.width - 4, y + 2, 2, 2);
+
+              for (let stave = 0; stave < 4; stave += 1) {
+                const staveX = x + 6 + stave * 5;
+                context.beginPath();
+                context.moveTo(staveX, y + 4);
+                context.quadraticCurveTo(staveX - 2, y + obstacle.height / 2, staveX, y + obstacle.height - 4);
+                context.strokeStyle = "rgba(57, 31, 25, 0.7)";
+                context.lineWidth = 0.8;
+                context.stroke();
+                context.beginPath();
+                context.moveTo(staveX + 1, y + 5);
+                context.quadraticCurveTo(staveX - 1, y + obstacle.height / 2, staveX + 1, y + obstacle.height - 5);
+                context.strokeStyle = "rgba(255, 210, 137, 0.28)";
+                context.lineWidth = 0.7;
+                context.stroke();
+              }
+
+              const hoop = context.createLinearGradient(x, y, x + obstacle.width, y);
+              hoop.addColorStop(0, "#42404a");
+              hoop.addColorStop(0.25, "#b2a88e");
+              hoop.addColorStop(0.55, "#6b6870");
+              hoop.addColorStop(0.8, "#b9ae91");
+              hoop.addColorStop(1, "#413b42");
+              for (const bandY of [y + 6, y + obstacle.height - 8]) {
+                context.beginPath();
+                context.moveTo(x + 2, bandY);
+                context.quadraticCurveTo(x + obstacle.width / 2, bandY + 1, x + obstacle.width - 2, bandY);
+                context.lineTo(x + obstacle.width - 2, bandY + 2.5);
+                context.quadraticCurveTo(x + obstacle.width / 2, bandY + 3.5, x + 2, bandY + 2.5);
+                context.closePath();
+                context.fillStyle = hoop;
+                context.fill();
+                context.strokeStyle = "#39323a";
+                context.lineWidth = 0.6;
+                context.stroke();
+                context.fillStyle = "#e4c783";
+                context.fillRect(x + 4, bandY + 1, 1, 1);
+                context.fillRect(x + obstacle.width - 5, bandY + 1, 1, 1);
+              }
+
+              context.beginPath();
+              context.ellipse(x + obstacle.width / 2, y + 3, obstacle.width / 2 - 5, 2.4, 0, 0, Math.PI * 2);
+              context.fillStyle = "#744329";
+              context.fill();
+              context.strokeStyle = "#d19a5a";
+              context.lineWidth = 0.7;
+              context.stroke();
+              context.beginPath();
+              context.moveTo(x + 10, y + 3);
+              context.quadraticCurveTo(x + obstacle.width / 2, y + 2, x + obstacle.width - 10, y + 3);
+              context.strokeStyle = "rgba(241, 194, 125, 0.65)";
+              context.lineWidth = 0.65;
+              context.stroke();
             } else {
-              context.fillStyle = "#51465f";
-              context.fillRect(x, y, obstacle.width, obstacle.height);
-              context.fillStyle = "#81738d";
-              context.fillRect(x + 2, y + 2, obstacle.width - 4, 3);
-              context.fillStyle = "#40364f";
-              context.fillRect(x + 2, y + 8, obstacle.width - 4, 2);
-              context.fillRect(x + Math.floor(obstacle.width * 0.55), y + 10, 2, obstacle.height - 12);
-              context.fillStyle = "rgba(255,255,255,0.12)";
-              context.fillRect(x + 4, y + 4, Math.max(0, obstacle.width - 10), 1);
+              context.fillStyle = "#17111d";
+              context.fillRect(x - 1, y - 1, obstacle.width + 2, obstacle.height + 2);
+              if (obstacle.kind === "crate") {
+                context.fillStyle = "#9b542e";
+                context.fillRect(x, y, obstacle.width, obstacle.height);
+                context.fillStyle = "#d8863b";
+                context.fillRect(x + 2, y + 2, obstacle.width - 4, 3);
+                context.fillStyle = "#70412f";
+                context.fillRect(x + 3, y + 6, obstacle.width - 6, 2);
+                context.strokeStyle = "#613648";
+                context.lineWidth = 2;
+                context.beginPath();
+                context.moveTo(x + 3, y + obstacle.height - 3);
+                context.lineTo(x + obstacle.width - 3, y + 7);
+                context.moveTo(x + 3, y + 7);
+                context.lineTo(x + obstacle.width - 3, y + obstacle.height - 3);
+                context.stroke();
+                context.fillStyle = "#f6c755";
+                context.fillRect(x + 2, y + 2, 2, 2);
+                context.fillRect(x + obstacle.width - 4, y + 2, 2, 2);
+              } else {
+                context.fillStyle = "#51465f";
+                context.fillRect(x, y, obstacle.width, obstacle.height);
+                context.fillStyle = "#81738d";
+                context.fillRect(x + 2, y + 2, obstacle.width - 4, 3);
+                context.fillStyle = "#40364f";
+                context.fillRect(x + 2, y + 8, obstacle.width - 4, 2);
+                context.fillRect(x + Math.floor(obstacle.width * 0.55), y + 10, 2, obstacle.height - 12);
+                context.fillStyle = "rgba(255,255,255,0.12)";
+                context.fillRect(x + 4, y + 4, Math.max(0, obstacle.width - 10), 1);
+              }
             }
+          }
+          for (const fragment of obstacleFragments) {
+            const x = fragment.x - cameraX;
+            if (x < -8 || x > canvas.width + 8) continue;
+            context.save();
+            context.globalAlpha = Math.min(1, fragment.life / 0.46);
+            context.translate(x, fragment.y);
+            context.rotate(fragment.rotation);
+            context.fillStyle = fragment.color;
+            context.fillRect(-fragment.size / 2, -fragment.size / 2, fragment.size, fragment.size);
+            context.restore();
           }
         }
 
