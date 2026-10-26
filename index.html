@@ -941,11 +941,11 @@
             return;
           }
           if (currentRoom === 2 && forestBoss.defeated) {
-            setHint("¡El dragón cayó! Acércate a la princesa Rulos al final del bosque.");
+            setHint("¡Bowser cayó! Acércate a la princesa Rulos al final del bosque.");
             return;
           }
           if (currentRoom === 2 && player.x > 1700) {
-            setHint("Los soldados protegen al dragón. Derrótalos para llegar hasta Rulos.");
+            setHint("Los soldados protegen a Bowser. Derrótalos para llegar hasta Rulos.");
             return;
           }
           if (isNearDoor()) {
@@ -1246,8 +1246,8 @@
 
           if (hitBoss) {
             setCombatHint(forestBoss.defeated
-              ? "¡Dragón derrotado! La princesa Rulos está a salvo."
-              : `¡Impacto! Al dragón le quedan ${forestBoss.health} golpes.`, 2);
+              ? "¡Bowser derrotado! La princesa Rulos está a salvo."
+              : `¡Impacto! A Bowser le quedan ${forestBoss.health} golpes.`, 2);
           } else if (defeatedCount && brokenCount) {
             setCombatHint(`¡Golpe doble! Derrotaste a ${defeatedCount} monstruos y rompiste una caja.`, 1.8);
           } else if (brokenCount) {
@@ -1408,16 +1408,16 @@
                 if (inFlamePath && invulnerabilityTimer <= 0) {
                   hurtTimer = 0.8;
                   invulnerabilityTimer = 1.15;
-                  setCombatHint("¡Las llamas del dragón te alcanzaron! Salta para esquivarlas.", 2);
+                  setCombatHint("¡Las llamas de Bowser te alcanzaron! Salta para esquivarlas.", 2);
                 }
               }
             } else {
-              const distanceToDragon = forestBoss.x - (player.x + player.width);
-              if (distanceToDragon >= -8 && distanceToDragon < 190 && forestBoss.attackCooldown <= 0) {
+              const distanceToBowser = forestBoss.x - (player.x + player.width);
+              if (distanceToBowser >= -8 && distanceToBowser < 190 && forestBoss.attackCooldown <= 0) {
                 forestBoss.attackTimer = 0.78;
                 forestBoss.attackCooldown = 2.25;
                 forestBoss.fireHit = false;
-                setCombatHint("¡El dragón inhala fuego! Salta para esquivarlo.", 0.8);
+                setCombatHint("¡Bowser inhala fuego! Salta para esquivarlo.", 0.8);
               }
             }
 
@@ -1431,7 +1431,7 @@
             if (verticalOverlap && horizontalGap <= 8 && invulnerabilityTimer <= 0) {
               hurtTimer = 0.8;
               invulnerabilityTimer = 1.15;
-              setCombatHint("¡El dragón te golpeó! Busca una abertura para atacar.", 1.8);
+              setCombatHint("¡Bowser te golpeó! Busca una abertura para atacar.", 1.8);
             }
           }
 
@@ -2783,187 +2783,200 @@
             context.globalAlpha = 0.55 + Math.sin(time / 22) * 0.35;
           }
 
-          // Long tail and folded bat wings silhouette the dragon.
-          context.fillStyle = "#263e3a";
+          // Green spiked shell, the signature silhouette of Bowser.
+          context.fillStyle = "#182a24";
           context.beginPath();
-          context.moveTo(39, 40);
-          context.quadraticCurveTo(49, 43, 55, 51);
-          context.lineTo(58, 57);
-          context.lineTo(49, 54);
-          context.lineTo(52, 59);
-          context.quadraticCurveTo(41, 56, 34, 50);
+          context.moveTo(27, 22);
+          context.lineTo(31, 11);
+          context.lineTo(35, 17);
+          context.lineTo(42, 5);
+          context.lineTo(45, 17);
+          context.lineTo(54, 11);
+          context.lineTo(51, 25);
+          context.lineTo(57, 34);
+          context.lineTo(49, 45);
+          context.lineTo(31, 43);
+          context.lineTo(25, 34);
           context.closePath();
           context.fill();
-          context.strokeStyle = "#182d30";
-          context.lineWidth = 1.2;
-          context.stroke();
-          context.fillStyle = "#304943";
+          context.fillStyle = "#4a9b46";
           context.beginPath();
-          context.moveTo(20, 26);
-          context.lineTo(11, 8);
-          context.lineTo(23, 15);
-          context.lineTo(22, 3);
-          context.lineTo(34, 18);
-          context.lineTo(45, 8);
-          context.lineTo(42, 24);
-          context.lineTo(55, 17);
-          context.lineTo(49, 34);
+          context.moveTo(29, 23);
+          context.lineTo(33, 14);
+          context.lineTo(37, 20);
+          context.lineTo(42, 9);
+          context.lineTo(46, 20);
+          context.lineTo(52, 15);
+          context.lineTo(49, 27);
+          context.lineTo(55, 34);
+          context.lineTo(47, 42);
+          context.lineTo(33, 40);
+          context.lineTo(27, 33);
+          context.closePath();
+          context.fill();
+          context.strokeStyle = "#a7d85a";
+          context.lineWidth = 1;
+          context.beginPath();
+          context.moveTo(33, 24);
+          context.lineTo(40, 21);
+          context.lineTo(46, 24);
+          context.lineTo(51, 31);
+          context.moveTo(40, 21);
           context.lineTo(39, 39);
-          context.closePath();
-          context.fill();
-          context.strokeStyle = "#1c3433";
-          context.lineWidth = 1.2;
+          context.moveTo(46, 24);
+          context.lineTo(34, 38);
           context.stroke();
-          context.fillStyle = "#8a4750";
-          context.beginPath();
-          context.moveTo(18, 21);
-          context.lineTo(13, 11);
-          context.lineTo(24, 18);
-          context.lineTo(23, 8);
-          context.lineTo(34, 22);
-          context.lineTo(44, 13);
-          context.lineTo(41, 27);
-          context.lineTo(51, 22);
-          context.lineTo(46, 32);
-          context.lineTo(37, 36);
-          context.closePath();
-          context.fill();
-
-          // Thick scaled legs and hooked claws.
-          context.fillStyle = "#355144";
-          context.fillRect(12, 42, 14, 13);
-          context.fillRect(34, 41, 13, 14);
-          context.fillStyle = "#607653";
-          context.fillRect(14, 44, 3, 8);
-          context.fillRect(36, 43, 3, 9);
-          context.fillStyle = "#25262d";
-          context.fillRect(9, 53, 18, 4);
-          context.fillRect(31, 53, 18, 4);
-          context.fillStyle = "#e5d6b0";
-          context.beginPath();
-          context.moveTo(12, 56);
-          context.lineTo(14, 61);
-          context.lineTo(17, 56);
-          context.moveTo(22, 56);
-          context.lineTo(24, 61);
-          context.lineTo(26, 56);
-          context.moveTo(34, 56);
-          context.lineTo(36, 61);
-          context.lineTo(39, 56);
-          context.moveTo(44, 56);
-          context.lineTo(46, 61);
-          context.lineTo(48, 56);
-          context.fill();
-
-          // Massive armored torso and shoulder plates.
-          context.fillStyle = "#34403b";
-          context.beginPath();
-          context.moveTo(11, 18);
-          context.quadraticCurveTo(29, 11, 47, 18);
-          context.lineTo(52, 39);
-          context.quadraticCurveTo(30, 47, 6, 39);
-          context.closePath();
-          context.fill();
-          context.strokeStyle = "#25262d";
-          context.lineWidth = 1.5;
-          context.stroke();
-          context.fillStyle = "#65756a";
-          context.beginPath();
-          context.moveTo(14, 20);
-          context.quadraticCurveTo(29, 15, 44, 20);
-          context.lineTo(46, 35);
-          context.quadraticCurveTo(29, 42, 11, 35);
-          context.closePath();
-          context.fill();
-          context.fillStyle = "#90414a";
-          context.beginPath();
-          context.moveTo(22, 21);
-          context.lineTo(36, 21);
-          context.lineTo(40, 38);
-          context.lineTo(18, 38);
-          context.closePath();
-          context.fill();
-          context.strokeStyle = "#d2af62";
-          context.lineWidth = 1.2;
-          context.beginPath();
-          context.moveTo(29, 22);
-          context.lineTo(29, 37);
-          context.moveTo(22, 29);
-          context.lineTo(36, 29);
-          context.stroke();
-
-          // Long reptilian neck and snout facing left toward the knight.
-          const scales = context.createLinearGradient(7, 5, 33, 28);
-          scales.addColorStop(0, "#78965a");
-          scales.addColorStop(0.5, "#4e754d");
-          scales.addColorStop(1, "#29453d");
-          context.fillStyle = scales;
-          context.beginPath();
-          context.moveTo(20, 35);
-          context.quadraticCurveTo(12, 29, 17, 20);
-          context.lineTo(11, 18);
-          context.quadraticCurveTo(5, 17, 1, 19);
-          context.lineTo(7, 14);
-          context.quadraticCurveTo(8, 7, 17, 6);
-          context.quadraticCurveTo(28, 4, 33, 13);
-          context.lineTo(34, 22);
-          context.quadraticCurveTo(28, 28, 29, 38);
-          context.closePath();
-          context.fill();
-          context.strokeStyle = "#1d3533";
-          context.lineWidth = 1.3;
-          context.stroke();
-          context.fillStyle = "#b7844d";
-          context.beginPath();
-          context.moveTo(3, 19);
-          context.quadraticCurveTo(13, 21, 21, 18);
-          context.lineTo(20, 22);
-          context.quadraticCurveTo(12, 25, 5, 22);
-          context.closePath();
-          context.fill();
-
-          // Horns, back spines, slit eye, nostril, and teeth.
-          context.fillStyle = "#d7c49a";
-          context.beginPath();
-          context.moveTo(18, 8);
-          context.lineTo(12, 0);
-          context.lineTo(22, 6);
-          context.closePath();
-          context.fill();
-          context.beginPath();
-          context.moveTo(28, 8);
-          context.lineTo(36, 1);
-          context.lineTo(33, 11);
-          context.closePath();
-          context.fill();
-          context.fillStyle = "#385344";
-          for (let spine = 0; spine < 4; spine += 1) {
-            const spineX = 36 + spine * 5;
+          context.fillStyle = "#f6f0dc";
+          [[31, 17], [41, 15], [51, 20], [53, 32]].forEach(([spikeX, spikeY]) => {
             context.beginPath();
-            context.moveTo(spineX, 25 + spine * 2);
-            context.lineTo(spineX + 3, 16 + spine * 2);
-            context.lineTo(spineX + 6, 27 + spine * 2);
+            context.moveTo(spikeX - 2, spikeY + 2);
+            context.lineTo(spikeX, spikeY - 4);
+            context.lineTo(spikeX + 2, spikeY + 2);
             context.closePath();
             context.fill();
-          }
-          context.fillStyle = "#f4c85d";
-          context.fillRect(11, 11, 5, 2);
-          context.fillStyle = "#a72f39";
-          context.fillRect(12, 11, 3, 1);
-          context.fillStyle = "#30262b";
-          context.fillRect(5, 16, 2, 2);
-          context.fillStyle = "#fff0ce";
+          });
+
+          // Stocky legs and clawed feet.
+          context.fillStyle = "#e98b35";
+          context.fillRect(13, 40, 14, 13);
+          context.fillRect(34, 40, 13, 13);
+          context.fillStyle = "#30352d";
+          context.fillRect(9, 51, 19, 6);
+          context.fillRect(31, 51, 19, 6);
+          context.fillStyle = "#fff0d2";
+          [[12, 56], [20, 56], [34, 56], [43, 56]].forEach(([clawX, clawY]) => {
+            context.beginPath();
+            context.moveTo(clawX - 2, clawY - 1);
+            context.lineTo(clawX, clawY + 4);
+            context.lineTo(clawX + 2, clawY - 1);
+            context.closePath();
+            context.fill();
+          });
+
+          // Orange body and segmented yellow belly.
+          context.fillStyle = "#e77d2f";
           context.beginPath();
-          context.moveTo(9, 21);
-          context.lineTo(11, 24);
-          context.lineTo(13, 21);
+          context.moveTo(17, 24);
+          context.quadraticCurveTo(28, 18, 42, 25);
+          context.lineTo(47, 42);
+          context.quadraticCurveTo(30, 49, 12, 42);
+          context.closePath();
+          context.fill();
+          context.fillStyle = "#ffd35a";
+          context.beginPath();
+          context.moveTo(22, 27);
+          context.quadraticCurveTo(30, 23, 38, 28);
+          context.lineTo(40, 40);
+          context.quadraticCurveTo(30, 44, 19, 40);
+          context.closePath();
+          context.fill();
+          context.strokeStyle = "#d99a32";
+          context.lineWidth = 1;
+          context.beginPath();
+          context.moveTo(21, 31);
+          context.quadraticCurveTo(30, 34, 39, 31);
+          context.moveTo(20, 36);
+          context.quadraticCurveTo(30, 39, 40, 36);
+          context.stroke();
+
+          // Muscular arms, spiked cuffs, and ivory collar studs.
+          context.fillStyle = "#f19a3e";
+          context.fillRect(8, 29, 10, 13);
+          context.fillRect(40, 29, 10, 12);
+          context.fillStyle = "#258344";
+          context.fillRect(7, 35, 11, 5);
+          context.fillRect(40, 35, 11, 5);
+          context.fillStyle = "#f7ead0";
+          [[9, 35], [15, 35], [42, 35], [48, 35]].forEach(([spikeX, spikeY]) => {
+            context.beginPath();
+            context.moveTo(spikeX - 1, spikeY + 2);
+            context.lineTo(spikeX, spikeY - 2);
+            context.lineTo(spikeX + 2, spikeY + 2);
+            context.closePath();
+            context.fill();
+          });
+          context.fillStyle = "#fff0d2";
+          context.beginPath();
+          context.moveTo(18, 25);
+          context.lineTo(21, 21);
+          context.lineTo(24, 26);
+          context.lineTo(28, 22);
+          context.lineTo(31, 27);
+          context.lineTo(35, 23);
+          context.lineTo(38, 29);
+          context.lineTo(20, 30);
+          context.closePath();
+          context.fill();
+
+          // Green head, red mane, ivory horns, and the left-facing snout.
+          context.fillStyle = "#d84a31";
+          context.beginPath();
+          context.moveTo(14, 17);
+          context.lineTo(10, 7);
+          context.lineTo(20, 12);
+          context.lineTo(22, 3);
+          context.lineTo(28, 13);
+          context.lineTo(35, 8);
+          context.lineTo(33, 20);
+          context.closePath();
+          context.fill();
+          context.fillStyle = "#31964d";
+          context.beginPath();
+          context.moveTo(17, 23);
+          context.quadraticCurveTo(10, 18, 14, 10);
+          context.quadraticCurveTo(23, 4, 32, 12);
+          context.lineTo(35, 22);
+          context.quadraticCurveTo(30, 29, 21, 29);
+          context.closePath();
+          context.fill();
+          context.strokeStyle = "#185c39";
+          context.lineWidth = 1.4;
+          context.stroke();
+          context.fillStyle = "#fff0d2";
+          context.beginPath();
+          context.moveTo(17, 11);
+          context.lineTo(12, 1);
+          context.lineTo(22, 8);
           context.closePath();
           context.fill();
           context.beginPath();
-          context.moveTo(17, 21);
-          context.lineTo(19, 23);
-          context.lineTo(20, 20);
+          context.moveTo(28, 10);
+          context.lineTo(36, 2);
+          context.lineTo(33, 14);
           context.closePath();
+          context.fill();
+          context.fillStyle = "#f2b64d";
+          context.beginPath();
+          context.ellipse(12, 19, 11, 6, -0.08, 0, Math.PI * 2);
+          context.fill();
+          context.strokeStyle = "#bd7134";
+          context.lineWidth = 0.8;
+          context.stroke();
+          context.fillStyle = "#51352c";
+          context.fillRect(6, 17, 2, 2);
+          context.fillRect(13, 17, 2, 2);
+          context.fillStyle = "#f8f1dd";
+          context.fillRect(20, 12, 6, 4);
+          context.fillStyle = "#26252b";
+          context.fillRect(21, 13, 2, 3);
+          context.fillStyle = "#b63235";
+          context.beginPath();
+          context.moveTo(18, 11);
+          context.lineTo(26, 9);
+          context.lineTo(25, 12);
+          context.lineTo(18, 13);
+          context.closePath();
+          context.fill();
+          context.fillStyle = "#4b272a";
+          context.fillRect(3, 22, 17, 3);
+          context.fillStyle = "#fff4dc";
+          context.beginPath();
+          context.moveTo(6, 22);
+          context.lineTo(8, 27);
+          context.lineTo(10, 22);
+          context.moveTo(15, 22);
+          context.lineTo(17, 26);
+          context.lineTo(19, 22);
           context.fill();
 
           if (forestBoss.attackTimer > 0.28) {
@@ -2997,7 +3010,7 @@
             context.fill();
           }
 
-          // Four-segment dragon health bar.
+          // Four-segment Bowser health bar.
           context.fillStyle = "#17111d";
           context.fillRect(5, -10, 58, 6);
           for (let segment = 0; segment < forestBoss.maxHealth; segment += 1) {
@@ -3007,7 +3020,7 @@
           context.fillStyle = "#fff0ce";
           context.font = "bold 5px monospace";
           context.textAlign = "center";
-          context.fillText("DRAGÓN", 34, -13);
+          context.fillText("BOWSER", 34, -13);
           context.textAlign = "start";
           context.restore();
         }
