@@ -1556,30 +1556,46 @@
         }
 
         function swordSwingPose(progress) {
-          const sweepEnd = 0.36;
+          const windupEnd = 0.12;
+          const sweepEnd = 0.48;
+          const restAngle = 0.15;
           const startAngle = -1.25;
           const endAngle = 1.25;
           const ease = (value) => value * value * (3 - 2 * value);
 
-          if (progress < sweepEnd) {
-            const phase = progress / sweepEnd;
+          if (progress < windupEnd) {
+            const phase = ease(progress / windupEnd);
             return {
-              angle: startAngle + (endAngle - startAngle) * ease(phase),
+              angle: restAngle + (startAngle - restAngle) * phase,
+              handX: -2 * phase,
+              handY: -1.5 * phase,
+              move: "windup",
+            };
+          }
+          if (progress < sweepEnd) {
+            const phase = (progress - windupEnd) / (sweepEnd - windupEnd);
+            const followThrough = 1 - Math.pow(1 - phase, 3);
+            return {
+              angle: startAngle + (endAngle - startAngle) * followThrough,
               sweepProgress: phase,
+              handX: -2 + phase * 4,
+              handY: -1.5 + phase,
               move: "sweep",
             };
           }
           const recovery = ease((progress - sweepEnd) / (1 - sweepEnd));
           return {
-            angle: endAngle + (0.15 - endAngle) * recovery,
+            angle: endAngle + (restAngle - endAngle) * recovery,
+            handX: 2 * (1 - recovery),
+            handY: -0.5 * (1 - recovery),
             move: "recover",
           };
         }
 
         function drawSwingingSword(progress) {
           const pose = swordSwingPose(progress);
-          const handX = player.x - cameraX + player.width / 2 + player.facing * 3;
-          const handY = player.y + player.height * 0.56;
+          const handX = player.x - cameraX + player.width / 2 + player.facing * (3 + pose.handX);
+          const handY = player.y + player.height * 0.56 + pose.handY;
 
           context.save();
           context.translate(handX, handY);
@@ -1734,8 +1750,8 @@
           if (swordSwingTimer > 0) {
             const progress = 1 - swordSwingTimer / swordSwingDuration;
             const pose = swordSwingPose(progress);
-            const centerX = player.x - cameraX + player.width / 2 + player.facing * 3;
-            const centerY = player.y + player.height * 0.56;
+            const centerX = player.x - cameraX + player.width / 2 + player.facing * (3 + pose.handX);
+            const centerY = player.y + player.height * 0.56 + pose.handY;
             if (pose.move === "sweep" && pose.sweepProgress > 0) {
               const arcEnd = -1.28 + pose.sweepProgress * 2.56;
               context.save();
