@@ -168,6 +168,7 @@
       .screen-frame::after {
         position: absolute;
         inset: 0;
+        z-index: 1;
         background: repeating-linear-gradient(
           to bottom,
           transparent 0,
@@ -176,6 +177,58 @@
         );
         content: "";
         pointer-events: none;
+      }
+
+      .dialogue-overlay {
+        position: absolute;
+        z-index: 2;
+        right: 5%;
+        bottom: 5%;
+        left: 5%;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: end;
+        gap: 5px 12px;
+        padding: 10px 12px;
+        border: 2px solid #100d17;
+        color: var(--ink);
+        background: rgba(255, 244, 223, 0.97);
+        box-shadow: 0 0 0 2px var(--gold), 4px 4px 0 rgba(9, 7, 13, 0.7);
+      }
+
+      .dialogue-overlay[hidden] {
+        display: none;
+      }
+
+      .dialogue-speaker {
+        grid-column: 1 / -1;
+        margin: 0;
+        color: #a34b69;
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .dialogue-line {
+        min-width: 0;
+        margin: 0;
+        font-size: 0.7rem;
+        font-weight: 700;
+        line-height: 1.4;
+      }
+
+      .dialogue-next {
+        min-height: 32px;
+        padding: 5px 9px;
+        border: 2px solid #100d17;
+        color: var(--ink);
+        background: var(--gold);
+        box-shadow: 2px 2px 0 #100d17;
+        cursor: pointer;
+        font-size: 0.58rem;
+        font-weight: 900;
+        text-transform: uppercase;
       }
 
       #game {
@@ -413,6 +466,25 @@
           padding: 7px;
         }
 
+        .dialogue-overlay {
+          right: 3%;
+          bottom: 4%;
+          left: 3%;
+          gap: 4px 7px;
+          padding: 7px 8px;
+        }
+
+        .dialogue-speaker,
+        .dialogue-line {
+          font-size: 0.56rem;
+        }
+
+        .dialogue-next {
+          min-height: 28px;
+          padding: 4px 6px;
+          font-size: 0.5rem;
+        }
+
         .controls-title,
         .control-help {
           display: none;
@@ -553,6 +625,11 @@
           >
             Tu navegador no admite el lienzo del juego. Usa un navegador actualizado para jugar.
           </canvas>
+          <div class="dialogue-overlay" id="princess-dialogue" role="dialog" aria-modal="true" aria-labelledby="dialogue-speaker" hidden>
+            <p class="dialogue-speaker" id="dialogue-speaker"></p>
+            <p class="dialogue-line" id="dialogue-line" aria-live="polite"></p>
+            <button class="dialogue-next" id="dialogue-next" type="button">Siguiente</button>
+          </div>
         </div>
 
         <section class="control-dock" aria-label="Controles del juego">
@@ -600,6 +677,10 @@
         const roomLabel = document.querySelector("#room-label");
         const jumpButton = document.querySelector("#jump-button");
         const swordButton = document.querySelector("#sword-button");
+        const dialogueOverlay = document.querySelector("#princess-dialogue");
+        const dialogueSpeaker = document.querySelector("#dialogue-speaker");
+        const dialogueLine = document.querySelector("#dialogue-line");
+        const dialogueNextButton = document.querySelector("#dialogue-next");
 
         const tile = 16;
         const playerScale = 1.75;
@@ -661,6 +742,17 @@
           height: 40,
           rescued: false,
         };
+        const princessDialogue = [
+          { speaker: "Princesa Rulos", line: "Gracias por salvarme, noble caballero." },
+          { speaker: "Caballero", line: "Es mi trabajo y creo que valió la pena." },
+          { speaker: "Princesa Rulos", line: "¿Por qué?" },
+          { speaker: "Caballero", line: "Por esa hermosa sonrisa." },
+          { speaker: "Princesa Rulos", line: "¡Ay! :3" },
+          { speaker: "Caballero", line: "Este es mi WhatsApp. Escríbeme un punto para escribirte de vuelta…" },
+        ];
+        let princessDialogueActive = false;
+        let princessDialogueIndex = 0;
+        let dialogueFrozenTime = 0;
         let currentRoom = 1;
         let doorTransitionPhase = "";
         let doorTransitionElapsed = 0;
@@ -742,6 +834,53 @@
           setHint(message);
         }
 
+        function renderPrincessDialogue() {
+          const line = princessDialogue[princessDialogueIndex];
+          dialogueSpeaker.textContent = line.speaker;
+          dialogueLine.textContent = line.line;
+          dialogueNextButton.textContent = princessDialogueIndex === princessDialogue.length - 1
+            ? "Terminar"
+            : "Siguiente";
+        }
+
+        function startPrincessDialogue() {
+          if (princessDialogueActive || princess.rescued) return;
+          princessDialogueActive = true;
+          princessDialogueIndex = 0;
+          heldDirections.clear();
+          swordHeld = false;
+          swordSwingTimer = 0;
+          player.velocityX = 0;
+          player.velocityY = 0;
+          player.y = floorY - player.height;
+          player.onGround = true;
+          combatHintTimer = 0;
+          dialogueFrozenTime = lastFrame;
+          setHint("La princesa Rulos y el caballero están hablando.");
+          renderPrincessDialogue();
+          dialogueOverlay.hidden = false;
+          dialogueNextButton.focus({ preventScroll: true });
+        }
+
+        function advancePrincessDialogue() {
+          if (!princessDialogueActive) return;
+          if (princessDialogueIndex < princessDialogue.length - 1) {
+            princessDialogueIndex += 1;
+            renderPrincessDialogue();
+            return;
+          }
+
+          princessDialogueActive = false;
+          princess.rescued = true;
+          forestSoldiers = [];
+          heldDirections.clear();
+          swordHeld = false;
+          player.velocityX = 0;
+          dialogueOverlay.hidden = true;
+          canvas.focus({ preventScroll: true });
+          updateHint();
+        }
+
         function nearbyChest() {
           const closeChests = chests
             .map((chest) => ({
@@ -761,6 +900,10 @@
         }
 
         function updateHint() {
+          if (princessDialogueActive) {
+            setHint("La princesa Rulos y el caballero están hablando.");
+            return;
+          }
           if (combatHintTimer > 0) {
             setHint(combatHintText);
             return;
@@ -798,7 +941,7 @@
         }
 
         function jump() {
-          if (doorTransitionPhase || !player.onGround) return;
+          if (doorTransitionPhase || princessDialogueActive || !player.onGround) return;
           player.velocityY = -jumpSpeed;
           player.onGround = false;
         }
@@ -820,7 +963,7 @@
         }
 
         function updatePhysics(deltaTime) {
-          if (doorTransitionPhase) return;
+          if (doorTransitionPhase || princessDialogueActive) return;
           const axis = Number(heldDirections.has("right")) - Number(heldDirections.has("left"));
           const levelObstacles = currentRoom === 1 ? dungeonObstacles : forestObstacles;
           player.velocityX = axis * moveSpeed;
@@ -961,7 +1104,7 @@
         }
 
         function attackWithSword() {
-          if (doorTransitionPhase) return;
+          if (doorTransitionPhase || princessDialogueActive) return;
           if (swordCooldown > 0) return;
 
           swordSwingTimer = swordSwingDuration;
@@ -1166,7 +1309,7 @@
         }
 
         function updateForestCombat(deltaTime) {
-          if (currentRoom !== 2 || princess.rescued) return;
+          if (currentRoom !== 2 || princess.rescued || princessDialogueActive) return;
           const playerCenterX = player.x + player.width / 2;
           const playerTop = player.y;
           const playerBottom = player.y + player.height;
@@ -1268,14 +1411,7 @@
             const princessCenterX = princess.x + princess.width / 2;
             const nearPrincess = Math.abs(playerCenterX - princessCenterX) <= 32
               && Math.abs(playerBottom - floorY) <= 24;
-            if (nearPrincess) {
-              princess.rescued = true;
-              forestSoldiers = [];
-              heldDirections.clear();
-              swordHeld = false;
-              player.velocityX = 0;
-              setCombatHint("¡Rescataste a la princesa Rulos! El reino celebra vuestro regreso.", 6);
-            }
+            if (nearPrincess) startPrincessDialogue();
           }
         }
 
@@ -1366,6 +1502,9 @@
 
         function enterForest() {
           currentRoom = 2;
+          princessDialogueActive = false;
+          dialogueOverlay.hidden = true;
+          princessDialogueIndex = 0;
           platforms = forestPlatforms;
           chests = forestChests;
           enemies = [];
@@ -1858,7 +1997,7 @@
         }
 
         function updatePendulums(time) {
-          if (currentRoom !== 2 || princess.rescued || invulnerabilityTimer > 0) return;
+          if (currentRoom !== 2 || princess.rescued || princessDialogueActive || invulnerabilityTimer > 0) return;
           for (const pendulum of forestPendulums) {
             const bob = pendulumPose(pendulum, time);
             const nearestX = Math.max(player.x, Math.min(bob.x, player.x + player.width));
@@ -3098,6 +3237,7 @@
         }
 
         function beginDirection(direction) {
+          if (princessDialogueActive) return;
           heldDirections.add(direction);
         }
 
@@ -3119,6 +3259,12 @@
 
         window.addEventListener("keydown", (event) => {
           const key = event.key.toLowerCase();
+          if (princessDialogueActive) {
+            if (event.target === dialogueNextButton && ["enter", " "].includes(key)) return;
+            event.preventDefault();
+            if (["enter", " ", "e"].includes(key) && !event.repeat) advancePrincessDialogue();
+            return;
+          }
           const direction = keyDirections[key];
           if (direction) {
             event.preventDefault();
@@ -3151,6 +3297,7 @@
         });
         swordButton.addEventListener("pointerdown", (event) => {
           event.preventDefault();
+          if (princessDialogueActive) return;
           swordButton.setPointerCapture(event.pointerId);
           swordHeld = true;
           attackWithSword();
@@ -3163,6 +3310,7 @@
         swordButton.addEventListener("click", (event) => {
           if (event.detail === 0) attackWithSword();
         });
+        dialogueNextButton.addEventListener("click", advancePrincessDialogue);
         jumpButton.addEventListener("click", jump);
         jumpButton.addEventListener("pointerdown", (event) => {
           event.preventDefault();
@@ -3173,17 +3321,19 @@
         function gameLoop(time) {
           const deltaTime = Math.min((time - lastFrame) / 1000, 0.04);
           lastFrame = time;
-          updatePlayerEffects(deltaTime);
-          if (doorTransitionPhase) updateDoorTransition(deltaTime);
-          else {
-            updatePhysics(deltaTime);
-            if (swordHeld && swordCooldown <= 0) attackWithSword();
-            resolveSwordHits();
-            updateEnemies(deltaTime);
-            updateForestCombat(deltaTime);
-            updatePendulums(time);
+          if (!princessDialogueActive) {
+            updatePlayerEffects(deltaTime);
+            if (doorTransitionPhase) updateDoorTransition(deltaTime);
+            else {
+              updatePhysics(deltaTime);
+              if (swordHeld && swordCooldown <= 0) attackWithSword();
+              resolveSwordHits();
+              updateEnemies(deltaTime);
+              updateForestCombat(deltaTime);
+              updatePendulums(time);
+            }
           }
-          drawScene(time);
+          drawScene(princessDialogueActive ? dialogueFrozenTime : time);
           window.requestAnimationFrame(gameLoop);
         }
 
