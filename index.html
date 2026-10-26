@@ -783,45 +783,45 @@
         const dungeonChests = [
           {
             x: 315, platformY: 132,
-            title: "Reliquia de curiosidad",
-            message: "Botín: +10 puntos de aventura. Explorar también cuenta como talento.",
+            title: "Mapa de la princesa Rulos",
+            message: "La princesa Rulos desapareció tras la puerta del este. Última pista: esta mazmorra. El mapa está al revés.",
           },
           {
             x: 620, platformY: 124,
-            title: "Contabilidad del dragón",
-            message: "El dragón gastó todo el oro en galletas. Saldo actual: una migaja y un recibo.",
+            title: "El recibo del dragón",
+            message: "«No secuestré a Rulos; solo cambié las llaves por galletas». El dragón gastó el oro real en el horno. Testigo poco fiable.",
           },
           {
             x: 930, platformY: 136,
-            title: "Nota del aventurero",
-            message: "Me alegró coincidir contigo en la iglesia. Si te apetece, me gustaría charlar algún día. Si no, todo bien.",
+            title: "Carta del caballero",
+            message: "Me alegró coincidir contigo en la iglesia. Si te apetece, después de esta aventura podríamos charlar algún día. Sin presión.",
           },
           {
             x: 1435, platformY: floorY,
-            title: "Calcetín legendario",
-            message: "Has encontrado un calcetín de dragón. Su pareja sigue perdida en otra mazmorra.",
+            title: "Calcetín de la guardia real",
+            message: "La guardia encontró una pista de Rulos… y un calcetín. La otra pista y el otro calcetín siguen desaparecidos.",
           },
           {
             x: 1940, platformY: 124,
-            title: "Poción de buena semana",
-            message: "Que algo te saque una sonrisa esta semana. Efecto secundario: saludar a una oveja.",
+            title: "La llave del bosque",
+            message: "El portero dejó la llave: tras esta puerta empieza el Bosque de la Mañana. ¡La princesa Rulos está cerca!",
           },
         ];
         const forestChests = [
           {
             x: 305, platformY: 132,
-            title: "Bellota de la suerte",
-            message: "Una ardilla te deja su bellota favorita. Dice que hoy pinta bien.",
+            title: "La pista de la ardilla",
+            message: "La ardilla encontró uno de los rulos dorados de la princesa. El rastro sigue hacia el claro soleado.",
           },
           {
             x: 895, platformY: 136,
-            title: "El picnic del bosque",
-            message: "El zorro organizó un picnic, pero olvidó traer servilletas. El comité le da un 8/10.",
+            title: "El testimonio del zorro",
+            message: "El zorro dice que el dragón estaba demasiado ocupado comiendo galletas para secuestrar a nadie. Se declara testigo imparcial.",
           },
           {
             x: 1570, platformY: 132,
-            title: "Rayo de sol embotellado",
-            message: "Un poquito de sol para acompañarte el día. No hace falta agitar: ya brilla solo.",
+            title: "Final feliz",
+            message: "¡Rescate completado! La princesa Rulos estaba bajo el gran roble, leyendo un mapa al revés. El reino celebra tu hazaña.",
           },
         ];
         const doorQuestions = [
@@ -1000,7 +1000,9 @@
           const opened = updateChestCount();
           chest.displayMessage = `${chest.title}: ${chest.message}`;
           if (opened === chests.length) {
-            chest.displayMessage += ` ¡Sala 0${currentRoom} completada! Has abierto todos los cofres.`;
+            chest.displayMessage += currentRoom === 1
+              ? " ¡Sala 01 despejada! La princesa Rulos te espera al otro lado de la puerta."
+              : " ¡Sala 02 despejada! El reino celebrará el rescate de la princesa Rulos.";
           }
           updateHint();
         }
