@@ -182,10 +182,10 @@
       .dialogue-overlay {
         position: absolute;
         z-index: 2;
-        right: 5%;
-        bottom: 5%;
-        left: 5%;
+        bottom: 30%;
+        left: 50%;
         display: grid;
+        width: min(64%, 520px);
         grid-template-columns: minmax(0, 1fr) auto;
         align-items: end;
         gap: 5px 12px;
@@ -193,7 +193,28 @@
         border: 2px solid #100d17;
         color: var(--ink);
         background: rgba(255, 244, 223, 0.97);
-        box-shadow: 0 0 0 2px var(--gold), 4px 4px 0 rgba(9, 7, 13, 0.7);
+        box-shadow: 0 0 0 1px var(--gold), 3px 4px 0 rgba(9, 7, 13, 0.62);
+        transform: translateX(-50%);
+      }
+
+      .dialogue-overlay::after {
+        position: absolute;
+        bottom: -12px;
+        left: calc(50% - 5px);
+        width: 0;
+        height: 0;
+        border-top: 12px solid #fff4df;
+        border-right: 11px solid transparent;
+        content: "";
+        filter: drop-shadow(1px 2px 0 #100d17);
+      }
+
+      .dialogue-overlay[data-speaker="knight"] .dialogue-speaker {
+        color: #536b8c;
+      }
+
+      .dialogue-overlay[data-speaker="princess"] .dialogue-speaker {
+        color: #a34b69;
       }
 
       .dialogue-overlay[hidden] {
@@ -467,9 +488,8 @@
         }
 
         .dialogue-overlay {
-          right: 3%;
-          bottom: 4%;
-          left: 3%;
+          bottom: 30%;
+          width: 72%;
           gap: 4px 7px;
           padding: 7px 8px;
         }
@@ -746,9 +766,9 @@
           { speaker: "Princesa Rulos", line: "Gracias por salvarme, noble caballero." },
           { speaker: "Caballero", line: "Es mi trabajo y creo que valió la pena." },
           { speaker: "Princesa Rulos", line: "¿Por qué?" },
-          { speaker: "Caballero", line: "Por esa hermosa sonrisa." },
+          { speaker: "Caballero", line: "Por esa hermosa mirada." },
           { speaker: "Princesa Rulos", line: "¡Ay! :3" },
-          { speaker: "Caballero", line: "Este es mi WhatsApp. Escríbeme un punto para escribirte de vuelta…" },
+          { speaker: "Caballero", line: "Este es mi WhatsApp: 302 234 4884. Escríbeme un punto para escribirte de vuelta 👀." },
         ];
         let princessDialogueActive = false;
         let princessDialogueIndex = 0;
@@ -836,6 +856,14 @@
 
         function renderPrincessDialogue() {
           const line = princessDialogue[princessDialogueIndex];
+          const isPrincessSpeaking = line.speaker === "Princesa Rulos";
+          const speakerX = isPrincessSpeaking
+            ? princess.x + princess.width / 2
+            : player.x + player.width / 2;
+          const edgePadding = window.innerWidth <= 700 ? 36 : 32;
+          const centerPercent = Math.max(edgePadding, Math.min(100 - edgePadding, (speakerX - cameraX) / canvas.width * 100));
+          dialogueOverlay.dataset.speaker = isPrincessSpeaking ? "princess" : "knight";
+          dialogueOverlay.style.left = `${centerPercent}%`;
           dialogueSpeaker.textContent = line.speaker;
           dialogueLine.textContent = line.line;
           dialogueNextButton.textContent = princessDialogueIndex === princessDialogue.length - 1
