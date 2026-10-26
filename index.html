@@ -610,6 +610,7 @@
         const moveSpeed = 118;
         const jumpSpeed = 236;
         const swordSwingDuration = 0.44;
+        const respawnDuration = 0.58;
         const dungeonGaps = [
           { x: 400, width: 44 },
           { x: 820, width: 52 },
@@ -632,6 +633,7 @@
         let swordSwingTimer = 0;
         let swordCooldown = 0;
         let swordHeld = false;
+        let respawnTimer = 0;
         let combatHintTimer = 0;
         let combatHintText = "";
         let hurtTimer = 0;
@@ -851,12 +853,19 @@
             if (standingOnGround) checkpointX = player.x;
           }
           if (currentRoom === 1 && player.y > canvas.height + 24) {
-            player.x = checkpointX;
+            const fallenGap = dungeonGaps.find((gap) => player.x + player.width > gap.x
+              && player.x < gap.x + gap.width);
+            const respawnX = fallenGap
+              ? Math.min(checkpointX, fallenGap.x - player.width - 56)
+              : checkpointX;
+            player.x = Math.max(0, respawnX);
+            checkpointX = player.x;
             player.y = floorY - player.height;
             player.velocityY = 0;
             player.fallSpeed = 0;
             player.onGround = true;
             cameraX = Math.max(0, Math.min(worldWidth - canvas.width, checkpointX - canvas.width * 0.38));
+            respawnTimer = respawnDuration;
           }
           const targetCamera = Math.max(0, Math.min(worldWidth - canvas.width, player.x - canvas.width * 0.38));
           cameraX += (targetCamera - cameraX) * Math.min(1, deltaTime * 9);
@@ -937,6 +946,7 @@
         function updatePlayerEffects(deltaTime) {
           swordSwingTimer = Math.max(0, swordSwingTimer - deltaTime);
           swordCooldown = Math.max(0, swordCooldown - deltaTime);
+          respawnTimer = Math.max(0, respawnTimer - deltaTime);
           hurtTimer = Math.max(0, hurtTimer - deltaTime);
           invulnerabilityTimer = Math.max(0, invulnerabilityTimer - deltaTime);
           combatHintTimer = Math.max(0, combatHintTimer - deltaTime);
@@ -1633,6 +1643,10 @@
           const spriteWidth = playerSpriteCanvas.width * playerScale;
           gameContext.save();
           gameContext.imageSmoothingEnabled = false;
+          if (respawnTimer > 0) {
+            const respawnProgress = 1 - respawnTimer / respawnDuration;
+            gameContext.globalAlpha = Math.min(1, 0.18 + respawnProgress * 1.7);
+          }
           if (player.facing < 0) {
             gameContext.translate(spriteX * 2 + spriteWidth, 0);
             gameContext.scale(-1, 1);
@@ -1838,6 +1852,34 @@
           context.restore();
         }
 
+        function drawRespawnEffect(time) {
+          if (respawnTimer <= 0) return;
+          const progress = 1 - respawnTimer / respawnDuration;
+          const fade = 1 - progress;
+          const centerX = player.x - cameraX + player.width / 2;
+          const groundY = player.y + player.height - 1;
+          const radius = 8 + progress * 20;
+
+          context.save();
+          context.globalAlpha = fade * 0.72;
+          context.beginPath();
+          context.ellipse(centerX, groundY, radius, Math.max(2, radius * 0.24), 0, 0, Math.PI * 2);
+          context.strokeStyle = "#82dcff";
+          context.lineWidth = 2 - progress;
+          context.stroke();
+          context.globalAlpha = fade * 0.8;
+          context.fillStyle = "#fff4df";
+          for (let particle = 0; particle < 4; particle += 1) {
+            const angle = time * 0.003 + particle * Math.PI / 2;
+            const x = centerX + Math.cos(angle) * radius;
+            const y = groundY - 4 - progress * 10 + Math.sin(angle) * radius * 0.18;
+            context.beginPath();
+            context.arc(x, y, 1.1, 0, Math.PI * 2);
+            context.fill();
+          }
+          context.restore();
+        }
+
         function drawCombatEffects(time) {
           if (swordSwingTimer > 0) {
             const progress = 1 - swordSwingTimer / swordSwingDuration;
@@ -1908,6 +1950,7 @@
           const nearby = nearbyChest();
           chests.forEach((chest) => drawChest(chest, chest === nearby));
           enemies.forEach((enemy) => drawEnemy(enemy, time));
+          drawRespawnEffect(time);
           drawPlayer(time);
           drawCombatEffects(time);
           chests.forEach((chest) => {
