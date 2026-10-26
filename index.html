@@ -377,19 +377,21 @@
         display: block;
       }
 
-      .jump-button:active {
+      .jump-button:active,
+      .jump-button.is-pressed {
         background: var(--gold);
-        transform: translate(2px, 2px);
-      }
-
-      .sword-button:active {
-        background: var(--pink);
         transform: translate(2px, 2px);
       }
 
       .sword-button:hover,
       .sword-button:focus-visible {
         background: var(--gold);
+      }
+
+      .sword-button:active,
+      .sword-button.is-pressed {
+        background: var(--pink);
+        transform: translate(2px, 2px);
       }
 
       .control-help {
@@ -3476,11 +3478,13 @@
           event.preventDefault();
           if (princessDialogueActive) return;
           swordButton.setPointerCapture(event.pointerId);
+          swordButton.classList.add("is-pressed");
           swordHeld = true;
           attackWithSword();
         });
         ["pointerup", "pointercancel", "lostpointercapture"].forEach((eventName) => {
           swordButton.addEventListener(eventName, () => {
+            swordButton.classList.remove("is-pressed");
             swordHeld = false;
           });
         });
@@ -3491,7 +3495,12 @@
         jumpButton.addEventListener("click", jump);
         jumpButton.addEventListener("pointerdown", (event) => {
           event.preventDefault();
+          jumpButton.setPointerCapture(event.pointerId);
+          jumpButton.classList.add("is-pressed");
           jump();
+        });
+        ["pointerup", "pointercancel", "lostpointercapture"].forEach((eventName) => {
+          jumpButton.addEventListener(eventName, () => jumpButton.classList.remove("is-pressed"));
         });
         canvas.addEventListener("pointerdown", () => canvas.focus({ preventScroll: true }));
 
