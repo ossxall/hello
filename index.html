@@ -279,6 +279,8 @@
       .sword-button {
         width: 100%;
         min-height: 42px;
+        display: grid;
+        place-items: center;
         padding: 7px 6px;
         border: 2px solid #0c0912;
         color: var(--ink);
@@ -289,6 +291,12 @@
         font-weight: 900;
         line-height: 1.25;
         text-transform: uppercase;
+      }
+
+      .sword-button svg {
+        width: 22px;
+        height: 22px;
+        display: block;
       }
 
       .jump-button:active {
@@ -562,7 +570,11 @@
               <button class="move-button" type="button" data-direction="right" aria-label="Mover a la derecha">▶</button>
             </div>
             <button class="jump-button" id="jump-button" type="button" aria-label="Saltar">↑ Saltar</button>
-            <button class="sword-button" id="sword-button" type="button" aria-label="Atacar con la espada">⚔ Espada</button>
+            <button class="sword-button" id="sword-button" type="button" aria-label="Atacar con la espada">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M20.8 2.2 14 4.1 9.4 8.7l5.9 5.9 4.6-4.6 1.9-6.9-.9-.9ZM10.7 7.4l5.9 5.9M7.2 11.7l5.1 5.1-3.2 3.2L4 14.9l3.2-3.2ZM5.1 16l2.9 2.9-3.6 3.2-2.5-2.5L5.1 16Z" fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width=".7"/>
+              </svg>
+            </button>
             <button class="action-button" id="open-chest" type="button">Abrir cofre</button>
           </div>
           <p class="control-help">← / → o A / D: moverse<br>↑ / W / espacio: saltar<br>F: espada · E: abrir cofre</p>
@@ -866,14 +878,14 @@
 
         function attackWithSword() {
           if (doorTransitionPhase) return;
-          if (!enemiesStarted || currentRoom !== 1) {
-            setCombatHint("La espada está lista. Los enemigos aparecerán tras el segundo cofre.", 2);
-            return;
-          }
           if (swordCooldown > 0) return;
 
           swordSwingTimer = 0.24;
           swordCooldown = 0.34;
+          if (!enemiesStarted || currentRoom !== 1) {
+            setCombatHint("La espada corta el aire.", 0.9);
+            return;
+          }
           let defeatedCount = 0;
           const playerCenterX = player.x + player.width / 2;
           const playerTop = player.y;
@@ -892,7 +904,9 @@
 
           setCombatHint(defeatedCount
             ? defeatedCount === 1 ? "¡Buen golpe! Has derrotado a un monstruo." : `¡Buen golpe! Has derrotado a ${defeatedCount} monstruos.`
-            : "¡Zas! Acércate a un enemigo y mira hacia él para golpearlo.", 1.8);
+            : enemies.some((enemy) => !enemy.defeated)
+              ? "¡Zas! Acércate a un enemigo y mira hacia él para golpearlo."
+              : "La espada corta el aire.", 1.8);
         }
 
         function updatePlayerEffects(deltaTime) {
