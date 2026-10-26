@@ -836,7 +836,9 @@
           player.steps += Math.abs(player.velocityX * deltaTime);
 
           const previousBottom = player.y + player.height;
+          player.previousBottom = previousBottom;
           player.velocityY = Math.min(player.velocityY + gravity * deltaTime, 430);
+          player.fallSpeed = player.velocityY;
           player.y += player.velocityY * deltaTime;
           player.onGround = false;
 
@@ -936,8 +938,6 @@
         function updateEnemies(deltaTime) {
           if (!enemiesStarted || currentRoom !== 1) return;
           const playerCenterX = player.x + player.width / 2;
-          const playerTop = player.y;
-          const playerBottom = player.y + player.height;
 
           for (let index = enemies.length - 1; index >= 0; index -= 1) {
             const enemy = enemies[index];
@@ -958,6 +958,25 @@
             if (enemy.x < enemy.minX || enemy.x > enemy.maxX) {
               enemy.x = Math.max(enemy.minX, Math.min(enemy.maxX, enemy.x));
               enemy.direction *= -1;
+            }
+
+            const playerTop = player.y;
+            const playerBottom = player.y + player.height;
+            const overlapsHorizontally = player.x < enemy.x + enemy.width
+              && player.x + player.width > enemy.x;
+            const landedOnEnemy = player.fallSpeed > 0
+              && player.previousBottom <= enemy.y + 3
+              && playerBottom >= enemy.y
+              && overlapsHorizontally;
+            if (landedOnEnemy) {
+              enemy.defeated = true;
+              enemy.defeatTimer = 0.42;
+              player.y = enemy.y - player.height;
+              player.velocityY = -jumpSpeed * 0.62;
+              player.fallSpeed = 0;
+              player.onGround = false;
+              setCombatHint("¡Pisotón! Has derrotado al monstruo.", 1.5);
+              continue;
             }
 
             const touchesPlayer = player.x < enemy.x + enemy.width
