@@ -1543,13 +1543,19 @@
             context.fillRect(px + 11, py + 7, 1, 1);
           }
           spriteContext.setTransform(1, 0, 0, 1, 0, 0);
+          const spriteX = Math.round(player.x - cameraX - 3.5);
+          const spriteWidth = playerSpriteCanvas.width * playerScale;
           gameContext.save();
           gameContext.imageSmoothingEnabled = false;
+          if (player.facing < 0) {
+            gameContext.translate(spriteX * 2 + spriteWidth, 0);
+            gameContext.scale(-1, 1);
+          }
           gameContext.drawImage(
             playerSpriteCanvas,
-            Math.round(player.x - cameraX - 3.5),
+            spriteX,
             py,
-            playerSpriteCanvas.width * playerScale,
+            spriteWidth,
             playerSpriteCanvas.height * playerScale,
           );
           gameContext.restore();
