@@ -631,12 +631,36 @@
         const forestObstacles = [
           { x: 610, width: 48, height: 18, kind: "log" },
           { x: 1190, width: 38, height: 24, kind: "mushroom" },
-          { x: 1810, width: 56, height: 20, kind: "log" },
-          { x: 1930, width: 38, height: 38, kind: "stump" },
+          { x: 1540, width: 38, height: 38, kind: "stump" },
         ];
         const forestPendulums = [
           { anchorX: 1335, anchorY: 34, length: 90, amplitude: 0.7, speed: 0.0026, phase: 0, radius: 13 },
         ];
+        const forestSoldierSpawns = [
+          { x: 1780, minX: 1750, maxX: 1825 },
+          { x: 1870, minX: 1835, maxX: 1910 },
+          { x: 1960, minX: 1925, maxX: 2000 },
+        ];
+        let forestSoldiers = [];
+        const forestBoss = {
+          x: 2040,
+          width: 68,
+          height: 64,
+          health: 4,
+          maxHealth: 4,
+          defeated: false,
+          defeatTimer: 0,
+          hurtTimer: 0,
+          attackTimer: 0,
+          attackCooldown: 1.1,
+          fireHit: false,
+        };
+        const princess = {
+          x: 2160,
+          width: 26,
+          height: 40,
+          rescued: false,
+        };
         let currentRoom = 1;
         let doorTransitionPhase = "";
         let doorTransitionElapsed = 0;
@@ -741,6 +765,18 @@
             setHint(combatHintText);
             return;
           }
+          if (currentRoom === 2 && princess.rescued) {
+            setHint("¡Princesa Rulos rescatada! El reino celebra vuestro regreso.");
+            return;
+          }
+          if (currentRoom === 2 && forestBoss.defeated) {
+            setHint("¡El dragón cayó! Acércate a la princesa Rulos al final del bosque.");
+            return;
+          }
+          if (currentRoom === 2 && player.x > 1700) {
+            setHint("Los soldados protegen al dragón. Derrótalos para llegar hasta Rulos.");
+            return;
+          }
           if (isNearDoor()) {
             setHint(doorTransitionPhase
               ? "La puerta se abre. ¡Hacia el bosque!"
@@ -816,6 +852,15 @@
                 && nextX + player.width > obstacle.x;
               if (!overlapsVertically || !overlapsHorizontally) continue;
               nextX = axis > 0 ? obstacle.x - player.width : obstacle.x + obstacle.width;
+            }
+            if (currentRoom === 2 && !forestBoss.defeated) {
+              const bossTop = floorY - forestBoss.height;
+              const overlapsBossVertically = player.y + player.height > bossTop && player.y < floorY;
+              const overlapsBossHorizontally = nextX < forestBoss.x + forestBoss.width
+                && nextX + player.width > forestBoss.x;
+              if (overlapsBossVertically && overlapsBossHorizontally) {
+                nextX = axis > 0 ? forestBoss.x - player.width : forestBoss.x + forestBoss.width;
+              }
             }
           }
           player.x = Math.max(0, Math.min(worldWidth - player.width, nextX));
@@ -930,7 +975,7 @@
         }
 
         function resolveSwordHits() {
-          if (swordSwingTimer <= 0 || currentRoom !== 1) return;
+          if (swordSwingTimer <= 0 || (currentRoom !== 1 && currentRoom !== 2)) return;
           const progress = 1 - swordSwingTimer / swordSwingDuration;
           const pose = swordSwingPose(progress);
           if (pose.move !== "sweep") return;
@@ -939,8 +984,9 @@
           const handY = player.y + player.height * 0.56 + pose.handY;
           let defeatedCount = 0;
           let brokenCount = 0;
+          let hitBoss = false;
 
-          if (enemiesStarted) {
+          if (currentRoom === 1 && enemiesStarted) {
             for (const enemy of enemies) {
               if (enemy.defeated || swordSwingHitEnemies.has(enemy)) continue;
               const closestX = Math.max(enemy.x, Math.min(handX, enemy.x + enemy.width));
@@ -957,45 +1003,88 @@
             }
           }
 
-          for (const obstacle of dungeonObstacles) {
-            if (!obstacle.destructible || obstacle.destroyed) continue;
-            const obstacleTop = floorY - obstacle.height;
-            const closestX = Math.max(obstacle.x, Math.min(handX, obstacle.x + obstacle.width));
-            const closestY = Math.max(obstacleTop, Math.min(handY, floorY));
-            const offsetX = closestX - handX;
-            const forwardDistance = offsetX * player.facing;
-            const distance = Math.hypot(offsetX, closestY - handY);
-            if (forwardDistance < -8 || forwardDistance > 48 || distance > 48) continue;
+          if (currentRoom === 2) {
+            for (const soldier of forestSoldiers) {
+              if (soldier.defeated || swordSwingHitEnemies.has(soldier)) continue;
+              const closestX = Math.max(soldier.x, Math.min(handX, soldier.x + soldier.width));
+              const closestY = Math.max(soldier.y, Math.min(handY, soldier.y + soldier.height));
+              const offsetX = closestX - handX;
+              const forwardDistance = offsetX * player.facing;
+              const distance = Math.hypot(offsetX, closestY - handY);
+              if (forwardDistance < -8 || forwardDistance > 52 || distance > 52) continue;
 
-            obstacle.destroyed = true;
-            brokenCount += 1;
-            const fragmentColors = obstacle.kind === "barrel"
-              ? ["#b87536", "#8a4b2e", "#d6ad69", "#70412f", "#b87536", "#8a4b2e"]
-              : ["#d8863b", "#9b542e", "#f6c755", "#70412f", "#d8863b", "#9b542e"];
-            for (let piece = 0; piece < fragmentColors.length; piece += 1) {
-              const spread = piece - (fragmentColors.length - 1) / 2;
-              obstacleFragments.push({
-                x: obstacle.x + obstacle.width / 2,
-                y: obstacleTop + obstacle.height / 2,
-                velocityX: spread * 28,
-                velocityY: -58 - Math.abs(spread) * 7,
-                rotation: spread * 0.35,
-                rotationSpeed: spread * 4,
-                size: piece % 2 ? 2 : 3,
-                life: 0.46,
-                color: fragmentColors[piece],
-              });
+              soldier.defeated = true;
+              soldier.defeatTimer = 0.42;
+              swordSwingHitEnemies.add(soldier);
+              defeatedCount += 1;
+            }
+
+            if (!forestBoss.defeated && !swordSwingHitEnemies.has(forestBoss)) {
+              const bossTop = floorY - forestBoss.height;
+              const closestX = Math.max(forestBoss.x, Math.min(handX, forestBoss.x + forestBoss.width));
+              const closestY = Math.max(bossTop, Math.min(handY, floorY));
+              const offsetX = closestX - handX;
+              const forwardDistance = offsetX * player.facing;
+              const distance = Math.hypot(offsetX, closestY - handY);
+              if (forwardDistance >= -8 && forwardDistance <= 56 && distance <= 56) {
+                forestBoss.health -= 1;
+                forestBoss.hurtTimer = 0.28;
+                swordSwingHitEnemies.add(forestBoss);
+                hitBoss = true;
+                if (forestBoss.health <= 0) {
+                  forestBoss.health = 0;
+                  forestBoss.defeated = true;
+                  forestBoss.defeatTimer = 0.8;
+                }
+              }
             }
           }
 
-          if (defeatedCount && brokenCount) {
+          if (currentRoom === 1) {
+            for (const obstacle of dungeonObstacles) {
+              if (!obstacle.destructible || obstacle.destroyed) continue;
+              const obstacleTop = floorY - obstacle.height;
+              const closestX = Math.max(obstacle.x, Math.min(handX, obstacle.x + obstacle.width));
+              const closestY = Math.max(obstacleTop, Math.min(handY, floorY));
+              const offsetX = closestX - handX;
+              const forwardDistance = offsetX * player.facing;
+              const distance = Math.hypot(offsetX, closestY - handY);
+              if (forwardDistance < -8 || forwardDistance > 48 || distance > 48) continue;
+
+              obstacle.destroyed = true;
+              brokenCount += 1;
+              const fragmentColors = obstacle.kind === "barrel"
+                ? ["#b87536", "#8a4b2e", "#d6ad69", "#70412f", "#b87536", "#8a4b2e"]
+                : ["#d8863b", "#9b542e", "#f6c755", "#70412f", "#d8863b", "#9b542e"];
+              for (let piece = 0; piece < fragmentColors.length; piece += 1) {
+                const spread = piece - (fragmentColors.length - 1) / 2;
+                obstacleFragments.push({
+                  x: obstacle.x + obstacle.width / 2,
+                  y: obstacleTop + obstacle.height / 2,
+                  velocityX: spread * 28,
+                  velocityY: -58 - Math.abs(spread) * 7,
+                  rotation: spread * 0.35,
+                  rotationSpeed: spread * 4,
+                  size: piece % 2 ? 2 : 3,
+                  life: 0.46,
+                  color: fragmentColors[piece],
+                });
+              }
+            }
+          }
+
+          if (hitBoss) {
+            setCombatHint(forestBoss.defeated
+              ? "¡Dragón derrotado! La princesa Rulos está a salvo."
+              : `¡Impacto! Al dragón le quedan ${forestBoss.health} golpes.`, 2);
+          } else if (defeatedCount && brokenCount) {
             setCombatHint(`¡Golpe doble! Derrotaste a ${defeatedCount} monstruos y rompiste una caja.`, 1.8);
           } else if (brokenCount) {
             setCombatHint("¡Caja rota!", 1.5);
           } else if (defeatedCount) {
-            setCombatHint(defeatedCount === 1
-              ? "¡Buen golpe! Has derrotado a un monstruo."
-              : `¡Buen golpe! Has derrotado a ${defeatedCount} monstruos.`, 1.8);
+            setCombatHint(currentRoom === 2
+              ? defeatedCount === 1 ? "¡Soldado derrotado!" : `¡Has derrotado a ${defeatedCount} soldados!`
+              : defeatedCount === 1 ? "¡Buen golpe! Has derrotado a un monstruo." : `¡Buen golpe! Has derrotado a ${defeatedCount} monstruos.`, 1.8);
           }
         }
 
@@ -1076,6 +1165,120 @@
           }
         }
 
+        function updateForestCombat(deltaTime) {
+          if (currentRoom !== 2 || princess.rescued) return;
+          const playerCenterX = player.x + player.width / 2;
+          const playerTop = player.y;
+          const playerBottom = player.y + player.height;
+
+          for (let index = forestSoldiers.length - 1; index >= 0; index -= 1) {
+            const soldier = forestSoldiers[index];
+            if (soldier.defeated) {
+              soldier.defeatTimer -= deltaTime;
+              if (soldier.defeatTimer <= 0) forestSoldiers.splice(index, 1);
+              continue;
+            }
+
+            const distanceToPlayer = playerCenterX - (soldier.x + soldier.width / 2);
+            if (Math.abs(distanceToPlayer) < 145 && Math.abs(player.y - soldier.y) < 52) {
+              soldier.direction = Math.sign(distanceToPlayer) || soldier.direction;
+              soldier.x += soldier.direction * soldier.speed * deltaTime;
+            } else {
+              soldier.x += soldier.direction * soldier.speed * 0.24 * deltaTime;
+            }
+            if (soldier.x < soldier.minX || soldier.x > soldier.maxX) {
+              soldier.x = Math.max(soldier.minX, Math.min(soldier.maxX, soldier.x));
+              soldier.direction *= -1;
+            }
+
+            const overlapsHorizontally = player.x < soldier.x + soldier.width
+              && player.x + player.width > soldier.x;
+            const landedOnSoldier = player.fallSpeed > 0
+              && player.previousBottom <= soldier.y + 3
+              && playerBottom >= soldier.y
+              && overlapsHorizontally;
+            if (landedOnSoldier) {
+              soldier.defeated = true;
+              soldier.defeatTimer = 0.42;
+              player.y = soldier.y - player.height;
+              player.velocityY = -jumpSpeed * 0.62;
+              player.fallSpeed = 0;
+              player.onGround = false;
+              setCombatHint("¡Pisotón! Soldado derrotado.", 1.4);
+              continue;
+            }
+
+            const touchesSoldier = player.x < soldier.x + soldier.width
+              && player.x + player.width > soldier.x
+              && playerTop < soldier.y + soldier.height
+              && playerBottom > soldier.y;
+            if (touchesSoldier && invulnerabilityTimer <= 0) {
+              hurtTimer = 0.8;
+              invulnerabilityTimer = 1.15;
+              setCombatHint("¡Un soldado te golpeó! No pierdes vida.", 1.8);
+            }
+          }
+
+          forestBoss.hurtTimer = Math.max(0, forestBoss.hurtTimer - deltaTime);
+          if (forestBoss.defeated) {
+            forestBoss.defeatTimer = Math.max(0, forestBoss.defeatTimer - deltaTime);
+          } else {
+            forestBoss.attackCooldown = Math.max(0, forestBoss.attackCooldown - deltaTime);
+            if (forestBoss.attackTimer > 0) {
+              forestBoss.attackTimer = Math.max(0, forestBoss.attackTimer - deltaTime);
+              if (forestBoss.attackTimer <= 0.28 && !forestBoss.fireHit) {
+                forestBoss.fireHit = true;
+                const fireLeft = forestBoss.x - 118;
+                const fireRight = forestBoss.x + 10;
+                const inFlamePath = player.x < fireRight
+                  && player.x + player.width > fireLeft
+                  && playerTop < floorY
+                  && playerBottom > floorY - 42;
+                if (inFlamePath && invulnerabilityTimer <= 0) {
+                  hurtTimer = 0.8;
+                  invulnerabilityTimer = 1.15;
+                  setCombatHint("¡Las llamas del dragón te alcanzaron! Salta para esquivarlas.", 2);
+                }
+              }
+            } else {
+              const distanceToDragon = forestBoss.x - (player.x + player.width);
+              if (distanceToDragon >= -8 && distanceToDragon < 190 && forestBoss.attackCooldown <= 0) {
+                forestBoss.attackTimer = 0.78;
+                forestBoss.attackCooldown = 2.25;
+                forestBoss.fireHit = false;
+                setCombatHint("¡El dragón inhala fuego! Salta para esquivarlo.", 0.8);
+              }
+            }
+
+            const bossTop = floorY - forestBoss.height;
+            const verticalOverlap = playerTop < floorY && playerBottom > bossTop;
+            const horizontalGap = Math.max(
+              0,
+              forestBoss.x - (player.x + player.width),
+              player.x - (forestBoss.x + forestBoss.width),
+            );
+            if (verticalOverlap && horizontalGap <= 8 && invulnerabilityTimer <= 0) {
+              hurtTimer = 0.8;
+              invulnerabilityTimer = 1.15;
+              setCombatHint("¡El dragón te golpeó! Busca una abertura para atacar.", 1.8);
+            }
+          }
+
+          if (forestBoss.defeated) {
+            const princessCenterX = princess.x + princess.width / 2;
+            const nearPrincess = Math.abs(playerCenterX - princessCenterX) <= 32
+              && Math.abs(playerBottom - floorY) <= 24;
+            if (nearPrincess) {
+              princess.rescued = true;
+              forestSoldiers = [];
+              heldDirections.clear();
+              swordHeld = false;
+              player.velocityX = 0;
+              setCombatHint("¡Rescataste a la princesa Rulos! El reino celebra vuestro regreso.", 6);
+            }
+          }
+        }
+
         function openNearbyChest() {
           if (doorTransitionPhase) return;
           const chest = nearbyChest();
@@ -1094,7 +1297,7 @@
           if (opened === chests.length) {
             chest.displayMessage += currentRoom === 1
               ? " ¡Esta era la única pista de la sala! Sigue la ruta hasta la puerta del este."
-              : " ¡Sala 02 despejada! El reino celebrará el rescate de la princesa Rulos.";
+              : " ¡La pista conduce al final del bosque, donde los soldados custodian al jefe!";
           }
           if (currentRoom === 1 && opened === 1) {
             startDungeonEnemies();
@@ -1167,8 +1370,28 @@
           chests = forestChests;
           enemies = [];
           enemiesStarted = false;
+          forestSoldiers = forestSoldierSpawns.map((spawn, index) => ({
+            ...spawn,
+            y: floorY - 28,
+            width: 22,
+            height: 28,
+            speed: 28 + (index % 2) * 4,
+            direction: -1,
+            phase: index * 1.4,
+            defeated: false,
+            defeatTimer: 0,
+          }));
+          forestBoss.health = forestBoss.maxHealth;
+          forestBoss.defeated = false;
+          forestBoss.defeatTimer = 0;
+          forestBoss.hurtTimer = 0;
+          forestBoss.attackTimer = 0;
+          forestBoss.attackCooldown = 1.1;
+          forestBoss.fireHit = false;
+          princess.rescued = false;
           obstacleFragments = [];
           swordSwingTimer = 0;
+          swordSwingHitEnemies.clear();
           checkpointX = 28;
           combatHintTimer = 0;
           hurtTimer = 0;
@@ -1181,6 +1404,7 @@
           player.facing = 1;
           cameraX = 0;
           heldDirections.clear();
+          swordHeld = false;
           roomLabel.textContent = "02";
           updateChestCount();
           updateHint();
@@ -1634,7 +1858,7 @@
         }
 
         function updatePendulums(time) {
-          if (currentRoom !== 2 || invulnerabilityTimer > 0) return;
+          if (currentRoom !== 2 || princess.rescued || invulnerabilityTimer > 0) return;
           for (const pendulum of forestPendulums) {
             const bob = pendulumPose(pendulum, time);
             const nearestX = Math.max(player.x, Math.min(bob.x, player.x + player.width));
@@ -2227,6 +2451,535 @@
           context.restore();
         }
 
+        function drawForestSoldier(soldier, time) {
+          const x = Math.round(soldier.x - cameraX);
+          const y = Math.round(soldier.y);
+          if (x < -30 || x > canvas.width + 30) return;
+
+          context.save();
+          if (soldier.defeated) {
+            const fade = Math.max(0, soldier.defeatTimer / 0.42);
+            context.globalAlpha = fade;
+            context.translate(x + soldier.width / 2, y + soldier.height / 2);
+            context.strokeStyle = "#ffd66e";
+            context.lineWidth = 1.5;
+            for (let ray = 0; ray < 4; ray += 1) {
+              context.rotate(Math.PI / 2);
+              context.beginPath();
+              context.moveTo(0, -2);
+              context.lineTo(0, -8 - (1 - fade) * 4);
+              context.stroke();
+            }
+            context.restore();
+            return;
+          }
+
+          const bob = prefersReducedMotion ? 0 : Math.sin(time / 140 + soldier.phase) * 0.7;
+          context.fillStyle = "rgba(16, 12, 22, 0.42)";
+          context.beginPath();
+          context.ellipse(x + soldier.width / 2, y + soldier.height, soldier.width * 0.56, 2.5, 0, 0, Math.PI * 2);
+          context.fill();
+          context.translate(x, y + bob);
+          if (soldier.direction < 0) {
+            context.translate(soldier.width, 0);
+            context.scale(-1, 1);
+          }
+          context.scale(soldier.width / 22, soldier.height / 28);
+
+          // A forest guard in leaf-green mail and a red plume.
+          context.fillStyle = "#47303a";
+          context.beginPath();
+          context.moveTo(5, 18);
+          context.lineTo(17, 18);
+          context.lineTo(19, 25);
+          context.lineTo(15, 27);
+          context.lineTo(12, 23);
+          context.lineTo(8, 27);
+          context.lineTo(3, 25);
+          context.closePath();
+          context.fill();
+          context.fillStyle = "#35313c";
+          context.fillRect(3, 24, 7, 3);
+          context.fillRect(13, 24, 7, 3);
+
+          context.fillStyle = "#852f42";
+          context.beginPath();
+          context.moveTo(5, 10);
+          context.lineTo(16, 10);
+          context.lineTo(20, 22);
+          context.lineTo(3, 22);
+          context.closePath();
+          context.fill();
+          context.fillStyle = "#b9484f";
+          context.beginPath();
+          context.moveTo(8, 11);
+          context.lineTo(14, 11);
+          context.lineTo(16, 21);
+          context.lineTo(6, 21);
+          context.closePath();
+          context.fill();
+          context.fillStyle = "#d6ad69";
+          context.fillRect(5, 21, 13, 2);
+          context.fillRect(10, 12, 2, 5);
+
+          context.fillStyle = "#667581";
+          context.beginPath();
+          context.moveTo(5, 10);
+          context.lineTo(8, 7);
+          context.lineTo(15, 7);
+          context.lineTo(18, 11);
+          context.lineTo(16, 15);
+          context.lineTo(6, 15);
+          context.closePath();
+          context.fill();
+          context.strokeStyle = "#34313a";
+          context.lineWidth = 0.8;
+          context.stroke();
+          context.fillStyle = "#aab8bc";
+          context.fillRect(8, 8, 7, 2);
+          context.fillStyle = "#d3b76b";
+          context.fillRect(7, 15, 10, 1.5);
+
+          // Helmet, visor, and a bright red plume.
+          context.fillStyle = "#596672";
+          context.beginPath();
+          context.moveTo(5, 8);
+          context.quadraticCurveTo(5, 1, 11, 1);
+          context.quadraticCurveTo(18, 1, 18, 8);
+          context.lineTo(16, 10);
+          context.lineTo(6, 10);
+          context.closePath();
+          context.fill();
+          context.strokeStyle = "#2d2b35";
+          context.lineWidth = 0.8;
+          context.stroke();
+          context.fillStyle = "#25252e";
+          context.fillRect(7, 7, 10, 2);
+          context.fillStyle = "#fff0ce";
+          context.fillRect(9, 7, 2, 1);
+          context.fillStyle = "#cf4b55";
+          context.beginPath();
+          context.moveTo(10, 2);
+          context.quadraticCurveTo(6, -3, 10, -4);
+          context.quadraticCurveTo(13, -5, 15, 1);
+          context.closePath();
+          context.fill();
+
+          // A short sword and cross guard.
+          context.fillStyle = "#765039";
+          context.fillRect(19, 11, 2, 10);
+          context.fillStyle = "#dce6ef";
+          context.beginPath();
+          context.moveTo(18, 12);
+          context.lineTo(21, 12);
+          context.lineTo(22, 3);
+          context.closePath();
+          context.fill();
+          context.fillStyle = "#d6ad69";
+          context.fillRect(17, 11, 5, 1.5);
+          context.restore();
+        }
+
+        function drawForestBoss(time) {
+          const x = Math.round(forestBoss.x - cameraX);
+          const y = floorY - forestBoss.height;
+          if (x + forestBoss.width < -40 || x > canvas.width + 40) return;
+
+          context.save();
+          if (forestBoss.defeated) {
+            if (forestBoss.defeatTimer > 0) {
+              const fade = forestBoss.defeatTimer / 0.8;
+              context.globalAlpha = fade;
+              context.translate(x + forestBoss.width / 2, y + forestBoss.height / 2);
+              context.strokeStyle = "#ffd66e";
+              context.lineWidth = 2;
+              for (let ray = 0; ray < 8; ray += 1) {
+                context.rotate(Math.PI / 4);
+                context.beginPath();
+                context.moveTo(0, -8);
+                context.lineTo(0, -20 - (1 - fade) * 10);
+                context.stroke();
+              }
+            }
+            context.restore();
+            return;
+          }
+
+          const bob = prefersReducedMotion ? 0 : Math.sin(time / 360) * 0.8;
+          context.fillStyle = "rgba(16, 12, 22, 0.5)";
+          context.beginPath();
+          context.ellipse(x + forestBoss.width / 2, floorY, 28, 4, 0, 0, Math.PI * 2);
+          context.fill();
+          context.translate(x, y + bob);
+          context.scale(forestBoss.width / 58, forestBoss.height / 58);
+          if (forestBoss.hurtTimer > 0) {
+            context.globalAlpha = 0.55 + Math.sin(time / 22) * 0.35;
+          }
+
+          // Long tail and folded bat wings silhouette the dragon.
+          context.fillStyle = "#263e3a";
+          context.beginPath();
+          context.moveTo(39, 40);
+          context.quadraticCurveTo(49, 43, 55, 51);
+          context.lineTo(58, 57);
+          context.lineTo(49, 54);
+          context.lineTo(52, 59);
+          context.quadraticCurveTo(41, 56, 34, 50);
+          context.closePath();
+          context.fill();
+          context.strokeStyle = "#182d30";
+          context.lineWidth = 1.2;
+          context.stroke();
+          context.fillStyle = "#304943";
+          context.beginPath();
+          context.moveTo(20, 26);
+          context.lineTo(11, 8);
+          context.lineTo(23, 15);
+          context.lineTo(22, 3);
+          context.lineTo(34, 18);
+          context.lineTo(45, 8);
+          context.lineTo(42, 24);
+          context.lineTo(55, 17);
+          context.lineTo(49, 34);
+          context.lineTo(39, 39);
+          context.closePath();
+          context.fill();
+          context.strokeStyle = "#1c3433";
+          context.lineWidth = 1.2;
+          context.stroke();
+          context.fillStyle = "#8a4750";
+          context.beginPath();
+          context.moveTo(18, 21);
+          context.lineTo(13, 11);
+          context.lineTo(24, 18);
+          context.lineTo(23, 8);
+          context.lineTo(34, 22);
+          context.lineTo(44, 13);
+          context.lineTo(41, 27);
+          context.lineTo(51, 22);
+          context.lineTo(46, 32);
+          context.lineTo(37, 36);
+          context.closePath();
+          context.fill();
+
+          // Thick scaled legs and hooked claws.
+          context.fillStyle = "#355144";
+          context.fillRect(12, 42, 14, 13);
+          context.fillRect(34, 41, 13, 14);
+          context.fillStyle = "#607653";
+          context.fillRect(14, 44, 3, 8);
+          context.fillRect(36, 43, 3, 9);
+          context.fillStyle = "#25262d";
+          context.fillRect(9, 53, 18, 4);
+          context.fillRect(31, 53, 18, 4);
+          context.fillStyle = "#e5d6b0";
+          context.beginPath();
+          context.moveTo(12, 56);
+          context.lineTo(14, 61);
+          context.lineTo(17, 56);
+          context.moveTo(22, 56);
+          context.lineTo(24, 61);
+          context.lineTo(26, 56);
+          context.moveTo(34, 56);
+          context.lineTo(36, 61);
+          context.lineTo(39, 56);
+          context.moveTo(44, 56);
+          context.lineTo(46, 61);
+          context.lineTo(48, 56);
+          context.fill();
+
+          // Massive armored torso and shoulder plates.
+          context.fillStyle = "#34403b";
+          context.beginPath();
+          context.moveTo(11, 18);
+          context.quadraticCurveTo(29, 11, 47, 18);
+          context.lineTo(52, 39);
+          context.quadraticCurveTo(30, 47, 6, 39);
+          context.closePath();
+          context.fill();
+          context.strokeStyle = "#25262d";
+          context.lineWidth = 1.5;
+          context.stroke();
+          context.fillStyle = "#65756a";
+          context.beginPath();
+          context.moveTo(14, 20);
+          context.quadraticCurveTo(29, 15, 44, 20);
+          context.lineTo(46, 35);
+          context.quadraticCurveTo(29, 42, 11, 35);
+          context.closePath();
+          context.fill();
+          context.fillStyle = "#90414a";
+          context.beginPath();
+          context.moveTo(22, 21);
+          context.lineTo(36, 21);
+          context.lineTo(40, 38);
+          context.lineTo(18, 38);
+          context.closePath();
+          context.fill();
+          context.strokeStyle = "#d2af62";
+          context.lineWidth = 1.2;
+          context.beginPath();
+          context.moveTo(29, 22);
+          context.lineTo(29, 37);
+          context.moveTo(22, 29);
+          context.lineTo(36, 29);
+          context.stroke();
+
+          // Long reptilian neck and snout facing left toward the knight.
+          const scales = context.createLinearGradient(7, 5, 33, 28);
+          scales.addColorStop(0, "#78965a");
+          scales.addColorStop(0.5, "#4e754d");
+          scales.addColorStop(1, "#29453d");
+          context.fillStyle = scales;
+          context.beginPath();
+          context.moveTo(20, 35);
+          context.quadraticCurveTo(12, 29, 17, 20);
+          context.lineTo(11, 18);
+          context.quadraticCurveTo(5, 17, 1, 19);
+          context.lineTo(7, 14);
+          context.quadraticCurveTo(8, 7, 17, 6);
+          context.quadraticCurveTo(28, 4, 33, 13);
+          context.lineTo(34, 22);
+          context.quadraticCurveTo(28, 28, 29, 38);
+          context.closePath();
+          context.fill();
+          context.strokeStyle = "#1d3533";
+          context.lineWidth = 1.3;
+          context.stroke();
+          context.fillStyle = "#b7844d";
+          context.beginPath();
+          context.moveTo(3, 19);
+          context.quadraticCurveTo(13, 21, 21, 18);
+          context.lineTo(20, 22);
+          context.quadraticCurveTo(12, 25, 5, 22);
+          context.closePath();
+          context.fill();
+
+          // Horns, back spines, slit eye, nostril, and teeth.
+          context.fillStyle = "#d7c49a";
+          context.beginPath();
+          context.moveTo(18, 8);
+          context.lineTo(12, 0);
+          context.lineTo(22, 6);
+          context.closePath();
+          context.fill();
+          context.beginPath();
+          context.moveTo(28, 8);
+          context.lineTo(36, 1);
+          context.lineTo(33, 11);
+          context.closePath();
+          context.fill();
+          context.fillStyle = "#385344";
+          for (let spine = 0; spine < 4; spine += 1) {
+            const spineX = 36 + spine * 5;
+            context.beginPath();
+            context.moveTo(spineX, 25 + spine * 2);
+            context.lineTo(spineX + 3, 16 + spine * 2);
+            context.lineTo(spineX + 6, 27 + spine * 2);
+            context.closePath();
+            context.fill();
+          }
+          context.fillStyle = "#f4c85d";
+          context.fillRect(11, 11, 5, 2);
+          context.fillStyle = "#a72f39";
+          context.fillRect(12, 11, 3, 1);
+          context.fillStyle = "#30262b";
+          context.fillRect(5, 16, 2, 2);
+          context.fillStyle = "#fff0ce";
+          context.beginPath();
+          context.moveTo(9, 21);
+          context.lineTo(11, 24);
+          context.lineTo(13, 21);
+          context.closePath();
+          context.fill();
+          context.beginPath();
+          context.moveTo(17, 21);
+          context.lineTo(19, 23);
+          context.lineTo(20, 20);
+          context.closePath();
+          context.fill();
+
+          if (forestBoss.attackTimer > 0.28) {
+            context.globalAlpha *= 0.8;
+            context.fillStyle = "#ffb33d";
+            context.beginPath();
+            context.ellipse(5, 20, 5, 3, 0, 0, Math.PI * 2);
+            context.fill();
+          } else if (forestBoss.attackTimer > 0) {
+            const breathProgress = 1 - forestBoss.attackTimer / 0.28;
+            const flameLength = 75 + breathProgress * 42 + Math.sin(time / 30) * 5;
+            const fire = context.createLinearGradient(6, 0, -flameLength, 0);
+            fire.addColorStop(0, "#fff4a3");
+            fire.addColorStop(0.24, "#ffbd39");
+            fire.addColorStop(0.65, "#f05b32");
+            fire.addColorStop(1, "rgba(161, 39, 48, 0.12)");
+            context.beginPath();
+            context.moveTo(8, 17);
+            context.quadraticCurveTo(-flameLength * 0.35, 11, -flameLength, 20);
+            context.quadraticCurveTo(-flameLength * 0.65, 28, -flameLength, 36);
+            context.quadraticCurveTo(-flameLength * 0.25, 33, 8, 23);
+            context.closePath();
+            context.fillStyle = fire;
+            context.fill();
+            context.beginPath();
+            context.moveTo(7, 19);
+            context.quadraticCurveTo(-flameLength * 0.35, 19, -flameLength * 0.7, 25);
+            context.quadraticCurveTo(-flameLength * 0.3, 27, 7, 22);
+            context.closePath();
+            context.fillStyle = "#fff3a2";
+            context.fill();
+          }
+
+          // Four-segment dragon health bar.
+          context.fillStyle = "#17111d";
+          context.fillRect(5, -10, 58, 6);
+          for (let segment = 0; segment < forestBoss.maxHealth; segment += 1) {
+            context.fillStyle = segment < forestBoss.health ? "#c23d45" : "#4a333d";
+            context.fillRect(7 + segment * 13, -9, 11, 4);
+          }
+          context.fillStyle = "#fff0ce";
+          context.font = "bold 5px monospace";
+          context.textAlign = "center";
+          context.fillText("DRAGÓN", 34, -13);
+          context.textAlign = "start";
+          context.restore();
+        }
+
+        function drawPrincessRulos(time) {
+          const x = Math.round(princess.x - cameraX);
+          const y = floorY - princess.height;
+          if (x + princess.width < -32 || x > canvas.width + 32) return;
+
+          const wave = princess.rescued && !prefersReducedMotion ? Math.sin(time / 150) * 2 : 0;
+          context.save();
+          context.translate(x, y);
+          context.fillStyle = "rgba(16, 12, 22, 0.28)";
+          context.beginPath();
+          context.ellipse(13, 40, 9, 2, 0, 0, Math.PI * 2);
+          context.fill();
+
+          // Long golden curls frame her face and shoulders.
+          context.fillStyle = "#8c4e28";
+          context.beginPath();
+          context.moveTo(7, 8);
+          context.quadraticCurveTo(6, 1, 13, 1);
+          context.quadraticCurveTo(21, 1, 20, 9);
+          context.lineTo(22, 20);
+          context.quadraticCurveTo(20, 25, 17, 20);
+          context.lineTo(7, 21);
+          context.quadraticCurveTo(3, 25, 3, 18);
+          context.closePath();
+          context.fill();
+          context.fillStyle = "#c88439";
+          for (const curl of [[5, 12], [20, 12], [5, 18], [19, 19], [8, 5], [16, 4]]) {
+            context.beginPath();
+            context.arc(curl[0], curl[1], 3.4, 0, Math.PI * 2);
+            context.fill();
+          }
+          context.fillStyle = "#edbd61";
+          context.beginPath();
+          context.arc(8, 5, 1.3, 0, Math.PI * 2);
+          context.arc(16, 4, 1.2, 0, Math.PI * 2);
+          context.arc(4.5, 12, 1.1, 0, Math.PI * 2);
+          context.fill();
+
+          // Rose-colored gown with a golden bodice and flowing skirt.
+          const gown = context.createLinearGradient(4, 20, 22, 39);
+          gown.addColorStop(0, "#f4a2b3");
+          gown.addColorStop(0.55, "#d85d83");
+          gown.addColorStop(1, "#9f3d67");
+          context.beginPath();
+          context.moveTo(9, 17);
+          context.lineTo(17, 17);
+          context.lineTo(20, 25);
+          context.lineTo(25, 39);
+          context.quadraticCurveTo(13, 42, 1, 39);
+          context.lineTo(6, 25);
+          context.closePath();
+          context.fillStyle = gown;
+          context.fill();
+          context.strokeStyle = "#7a3455";
+          context.lineWidth = 0.8;
+          context.stroke();
+          context.fillStyle = "#f6c86d";
+          context.beginPath();
+          context.moveTo(9, 18);
+          context.lineTo(17, 18);
+          context.lineTo(18, 25);
+          context.lineTo(7, 25);
+          context.closePath();
+          context.fill();
+          context.fillStyle = "#fff0ce";
+          context.beginPath();
+          context.moveTo(8, 26);
+          context.lineTo(13, 32);
+          context.lineTo(18, 26);
+          context.lineTo(16, 37);
+          context.lineTo(10, 37);
+          context.closePath();
+          context.fill();
+          context.fillStyle = "#d6ad69";
+          context.fillRect(5, 38, 16, 1.5);
+
+          // Arms and a soft, friendly face.
+          context.strokeStyle = "#f2c397";
+          context.lineWidth = 3;
+          context.lineCap = "round";
+          context.beginPath();
+          context.moveTo(8, 20);
+          context.lineTo(4, 27);
+          context.lineTo(5, 31 + wave);
+          context.moveTo(18, 20);
+          context.lineTo(22, 25 - wave);
+          context.stroke();
+          context.fillStyle = "#efbd98";
+          context.beginPath();
+          context.ellipse(13, 11, 6.5, 7.5, 0, 0, Math.PI * 2);
+          context.fill();
+          context.fillStyle = "#69402f";
+          context.beginPath();
+          context.arc(10.5, 10, 0.7, 0, Math.PI * 2);
+          context.arc(15.5, 10, 0.7, 0, Math.PI * 2);
+          context.fill();
+          context.fillStyle = "#db7d79";
+          context.beginPath();
+          context.arc(9, 13, 1.2, 0, Math.PI * 2);
+          context.arc(17, 13, 1.2, 0, Math.PI * 2);
+          context.fill();
+          context.strokeStyle = "#a44d58";
+          context.lineWidth = 0.7;
+          context.beginPath();
+          context.arc(13, 12, 2.2, 0.2, Math.PI - 0.2);
+          context.stroke();
+
+          // A small gold crown with a bright central jewel.
+          context.fillStyle = "#d6ad55";
+          context.beginPath();
+          context.moveTo(7, 6);
+          context.lineTo(6, 1);
+          context.lineTo(10, 4);
+          context.lineTo(13, 0);
+          context.lineTo(16, 4);
+          context.lineTo(20, 1);
+          context.lineTo(19, 7);
+          context.closePath();
+          context.fill();
+          context.fillStyle = "#fff0a8";
+          context.fillRect(8, 6, 10, 1.5);
+          context.fillStyle = "#82dcff";
+          context.fillRect(12, 3, 2, 2);
+
+          if (princess.rescued) {
+            context.fillStyle = "#fff4b0";
+            for (let sparkle = 0; sparkle < 4; sparkle += 1) {
+              const sparkleX = 2 + ((time / 90 + sparkle * 6) % 24);
+              const sparkleY = 5 + (sparkle % 2) * 11;
+              context.fillRect(sparkleX, sparkleY, 1.5, 1.5);
+            }
+          }
+          context.restore();
+        }
+
         function drawRespawnEffect(time) {
           if (respawnTimer <= 0) return;
           const progress = 1 - respawnTimer / respawnDuration;
@@ -2327,6 +3080,11 @@
           const nearby = nearbyChest();
           chests.forEach((chest) => drawChest(chest, chest === nearby));
           enemies.forEach((enemy) => drawEnemy(enemy, time));
+          if (currentRoom === 2) {
+            drawPrincessRulos(time);
+            forestSoldiers.forEach((soldier) => drawForestSoldier(soldier, time));
+            drawForestBoss(time);
+          }
           drawRespawnEffect(time);
           drawPlayer(time);
           drawCombatEffects(time);
@@ -2422,6 +3180,7 @@
             if (swordHeld && swordCooldown <= 0) attackWithSword();
             resolveSwordHits();
             updateEnemies(deltaTime);
+            updateForestCombat(deltaTime);
             updatePendulums(time);
           }
           drawScene(time);
