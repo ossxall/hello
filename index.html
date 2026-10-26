@@ -587,6 +587,38 @@
         }
       }
 
+      @media (max-width: 260px) {
+        .game-header {
+          gap: 4px;
+          padding-inline: 5px;
+        }
+
+        .brand-icon {
+          width: 22px;
+          height: 22px;
+          flex-basis: 22px;
+          font-size: 0.9rem;
+        }
+
+        .title-lockup {
+          gap: 4px;
+        }
+
+        .eyebrow {
+          display: none;
+        }
+
+        h1 {
+          font-size: 0.62rem;
+          white-space: nowrap;
+        }
+
+        .hud-badge {
+          padding: 3px;
+          font-size: 0.4rem;
+        }
+      }
+
       @media (max-height: 620px) {
         .game-shell {
           gap: 7px;
@@ -612,6 +644,10 @@
       }
 
       @media (min-width: 701px) and (max-height: 620px) {
+        .game-main {
+          align-items: stretch;
+        }
+
         .screen-frame {
           width: fit-content;
           height: 100%;
@@ -625,6 +661,40 @@
           width: auto;
           height: 100%;
           max-width: 100%;
+          max-height: calc(100svh - 166px);
+        }
+
+        .control-stack {
+          grid-template-columns: auto repeat(2, minmax(0, 1fr));
+          align-items: center;
+          gap: 5px;
+        }
+
+        .move-controls {
+          gap: 4px;
+        }
+
+        .move-button {
+          width: 42px;
+          min-height: 42px;
+        }
+
+        .jump-button,
+        .sword-button {
+          min-height: 48px;
+          padding-inline: 3px;
+          font-size: 0.55rem;
+        }
+      }
+
+      @media (max-width: 700px) and (max-height: 620px) {
+        .screen-frame {
+          display: grid;
+          place-items: center;
+        }
+
+        #game {
+          max-height: calc(100svh - 190px);
         }
       }
 
