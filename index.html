@@ -538,7 +538,7 @@
         </div>
         <div class="hud" aria-label="Estado de la partida">
           <span class="hud-badge">SALA <strong id="room-label">01</strong></span>
-          <span class="hud-badge"><strong id="chest-count">0 / 5</strong> COFRES</span>
+          <span class="hud-badge"><strong id="chest-count">0 / 1</strong> COFRES</span>
         </div>
       </header>
 
@@ -610,6 +610,18 @@
         const moveSpeed = 118;
         const jumpSpeed = 236;
         const swordSwingDuration = 0.44;
+        const dungeonGaps = [
+          { x: 400, width: 44 },
+          { x: 820, width: 52 },
+          { x: 1215, width: 60 },
+          { x: 1630, width: 65 },
+        ];
+        const dungeonObstacles = [
+          { x: 560, width: 28, height: 18, kind: "crate" },
+          { x: 930, width: 34, height: 26, kind: "stone" },
+          { x: 1320, width: 32, height: 22, kind: "crate" },
+          { x: 1740, width: 38, height: 28, kind: "stone" },
+        ];
         let currentRoom = 1;
         let doorTransitionPhase = "";
         let doorTransitionElapsed = 0;
@@ -630,13 +642,13 @@
         };
         const jumpKeys = new Set(["arrowup", "w", " "]);
         const dungeonPlatforms = [
-          { x: 0, y: floorY, width: worldWidth, ground: true },
-          { x: 410, y: 132, width: 112 },
-          { x: 560, y: 124, width: 132 },
-          { x: 865, y: 136, width: 148 },
-          { x: 1180, y: 120, width: 144 },
-          { x: 1535, y: 132, width: 150 },
-          { x: 1870, y: 124, width: 155 },
+          { x: 0, y: floorY, width: 400, ground: true },
+          { x: 444, y: floorY, width: 376, ground: true },
+          { x: 872, y: floorY, width: 343, ground: true },
+          { x: 1275, y: floorY, width: 355, ground: true },
+          { x: 1695, y: floorY, width: worldWidth - 1695, ground: true },
+          { x: 832, y: 140, width: 34 },
+          { x: 1643, y: 136, width: 38 },
         ];
         const forestPlatforms = [
           { x: 0, y: floorY, width: worldWidth, ground: true },
@@ -653,26 +665,6 @@
             title: "Mapa de la princesa Rulos",
             message: "La princesa Rulos desapareció tras la puerta del este. Última pista: esta mazmorra. El mapa está al revés.",
             portrait: true,
-          },
-          {
-            x: 620, platformY: 124,
-            title: "El recibo del dragón",
-            message: "«No secuestré a Rulos; solo cambié las llaves por galletas». El dragón gastó el oro real en el horno. Testigo poco fiable.",
-          },
-          {
-            x: 930, platformY: 136,
-            title: "Carta del caballero",
-            message: "Me alegró coincidir contigo en la iglesia. Si te apetece, después de esta aventura podríamos charlar algún día. Sin presión.",
-          },
-          {
-            x: 1435, platformY: floorY,
-            title: "Calcetín de la guardia real",
-            message: "La guardia encontró una pista de Rulos… y un calcetín. La otra pista y el otro calcetín siguen desaparecidos.",
-          },
-          {
-            x: 1940, platformY: 124,
-            title: "La llave del bosque",
-            message: "El portero dejó la llave: tras esta puerta empieza el Bosque de la Mañana. ¡La princesa Rulos está cerca!",
           },
         ];
         const forestChests = [
@@ -705,6 +697,7 @@
           facing: 1,
           steps: 0,
         };
+        let checkpointX = player.x;
         const heldDirections = new Set();
         const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         let cameraX = 0;
@@ -759,7 +752,7 @@
           } else {
             setHint(currentRoom === 2
               ? "Sala 02: bosque de mañana. Salta, explora y busca los cofres."
-              : "Avanza, salta las plataformas y busca los cofres.");
+              : "Avanza, salta los huecos y esquiva los bloques.");
           }
         }
 
@@ -808,6 +801,16 @@
                 : doorX + 28;
             }
           }
+          if (currentRoom === 1 && axis) {
+            for (const obstacle of dungeonObstacles) {
+              const obstacleTop = floorY - obstacle.height;
+              const overlapsVertically = player.y + player.height > obstacleTop && player.y < floorY;
+              const overlapsHorizontally = nextX < obstacle.x + obstacle.width
+                && nextX + player.width > obstacle.x;
+              if (!overlapsVertically || !overlapsHorizontally) continue;
+              nextX = axis > 0 ? obstacle.x - player.width : obstacle.x + obstacle.width;
+            }
+          }
           player.x = Math.max(0, Math.min(worldWidth - player.width, nextX));
           player.steps += Math.abs(player.velocityX * deltaTime);
 
@@ -827,8 +830,34 @@
                 player.onGround = true;
               }
             }
+            if (currentRoom === 1) {
+              for (const obstacle of dungeonObstacles) {
+                const obstacleTop = floorY - obstacle.height;
+                const overlapsObstacle = player.x + player.width > obstacle.x && player.x < obstacle.x + obstacle.width;
+                if (overlapsObstacle && previousBottom <= obstacleTop && player.y + player.height >= obstacleTop) {
+                  player.y = obstacleTop - player.height;
+                  player.velocityY = 0;
+                  player.onGround = true;
+                }
+              }
+            }
           }
 
+          if (currentRoom === 1 && player.onGround) {
+            const standingOnGround = dungeonPlatforms.some((platform) => platform.ground
+              && player.x + player.width > platform.x
+              && player.x < platform.x + platform.width
+              && Math.abs(player.y + player.height - platform.y) < 1);
+            if (standingOnGround) checkpointX = player.x;
+          }
+          if (currentRoom === 1 && player.y > canvas.height + 24) {
+            player.x = checkpointX;
+            player.y = floorY - player.height;
+            player.velocityY = 0;
+            player.fallSpeed = 0;
+            player.onGround = true;
+            cameraX = Math.max(0, Math.min(worldWidth - canvas.width, checkpointX - canvas.width * 0.38));
+          }
           const targetCamera = Math.max(0, Math.min(worldWidth - canvas.width, player.x - canvas.width * 0.38));
           cameraX += (targetCamera - cameraX) * Math.min(1, deltaTime * 9);
           const chestToOpen = nearbyChest();
@@ -854,7 +883,7 @@
           const fifthEnemyX = Math.max(1850, cameraX + canvas.width + 1070);
           const spawnPoints = [
             { x: firstEnemyX, minX: firstEnemyX - 20, maxX: firstEnemyX + 48 },
-            { x: firstEnemyX + 108, minX: firstEnemyX + 72, maxX: firstEnemyX + 152 },
+            { x: firstEnemyX + 108, minX: firstEnemyX + 72, maxX: Math.min(firstEnemyX + 152, 806) },
             { x: thirdEnemyX, minX: thirdEnemyX - 55, maxX: thirdEnemyX + 65 },
             { x: fourthEnemyX, minX: fourthEnemyX - 55, maxX: fourthEnemyX + 65 },
             { x: fifthEnemyX, minX: fifthEnemyX - 60, maxX: fifthEnemyX + 70 },
@@ -879,7 +908,7 @@
           swordSwingTimer = swordSwingDuration;
           swordCooldown = 0.5;
           if (!enemiesStarted || currentRoom !== 1) {
-            setCombatHint("La espada corta el aire.", 0.9);
+            setCombatHint("La espada corta el aire. Los enemigos aparecerán al abrir el cofre.", 1.4);
             return;
           }
           let defeatedCount = 0;
@@ -986,10 +1015,10 @@
           chest.displayMessage = `${chest.title}: ${chest.message}`;
           if (opened === chests.length) {
             chest.displayMessage += currentRoom === 1
-              ? " ¡Sala 01 despejada! La princesa Rulos te espera al otro lado de la puerta."
+              ? " ¡Esta era la única pista de la sala! Sigue la ruta hasta la puerta del este."
               : " ¡Sala 02 despejada! El reino celebrará el rescate de la princesa Rulos.";
           }
-          if (currentRoom === 1 && opened === 2) {
+          if (currentRoom === 1 && opened === 1) {
             startDungeonEnemies();
             setCombatHint("Oyes pasos acercándose desde las sombras... Prepara la espada (F).", 4);
           } else {
@@ -1258,6 +1287,63 @@
           if (!platform.ground) {
             context.fillStyle = "#857292";
             context.fillRect(x + 3, platform.y + 7, platform.width - 6, 1);
+          }
+        }
+
+        function drawDungeonGaps() {
+          for (const gap of dungeonGaps) {
+            const x = Math.round(gap.x - cameraX);
+            if (x + gap.width < 0 || x > canvas.width) continue;
+            context.fillStyle = "#15111d";
+            context.fillRect(x, floorY, gap.width, canvas.height - floorY);
+            context.fillStyle = "#0b0911";
+            context.fillRect(x + 2, floorY + 8, Math.max(0, gap.width - 4), canvas.height - floorY - 8);
+            context.fillStyle = "#77688d";
+            context.fillRect(x, floorY, 2, 6);
+            context.fillRect(x + gap.width - 2, floorY, 2, 6);
+            context.fillStyle = "rgba(255,255,255,0.08)";
+            context.fillRect(x + 3, floorY + 3, Math.max(0, gap.width - 6), 1);
+          }
+        }
+
+        function drawDungeonObstacles() {
+          if (currentRoom !== 1) return;
+          for (const obstacle of dungeonObstacles) {
+            const x = Math.round(obstacle.x - cameraX);
+            const y = floorY - obstacle.height;
+            if (x + obstacle.width < 0 || x > canvas.width) continue;
+
+            context.fillStyle = "#17111d";
+            context.fillRect(x - 1, y - 1, obstacle.width + 2, obstacle.height + 2);
+            if (obstacle.kind === "crate") {
+              context.fillStyle = "#9b542e";
+              context.fillRect(x, y, obstacle.width, obstacle.height);
+              context.fillStyle = "#d8863b";
+              context.fillRect(x + 2, y + 2, obstacle.width - 4, 3);
+              context.fillStyle = "#70412f";
+              context.fillRect(x + 3, y + 6, obstacle.width - 6, 2);
+              context.strokeStyle = "#613648";
+              context.lineWidth = 2;
+              context.beginPath();
+              context.moveTo(x + 3, y + obstacle.height - 3);
+              context.lineTo(x + obstacle.width - 3, y + 7);
+              context.moveTo(x + 3, y + 7);
+              context.lineTo(x + obstacle.width - 3, y + obstacle.height - 3);
+              context.stroke();
+              context.fillStyle = "#f6c755";
+              context.fillRect(x + 2, y + 2, 2, 2);
+              context.fillRect(x + obstacle.width - 4, y + 2, 2, 2);
+            } else {
+              context.fillStyle = "#51465f";
+              context.fillRect(x, y, obstacle.width, obstacle.height);
+              context.fillStyle = "#81738d";
+              context.fillRect(x + 2, y + 2, obstacle.width - 4, 3);
+              context.fillStyle = "#40364f";
+              context.fillRect(x + 2, y + 8, obstacle.width - 4, 2);
+              context.fillRect(x + Math.floor(obstacle.width * 0.55), y + 10, 2, obstacle.height - 12);
+              context.fillStyle = "rgba(255,255,255,0.12)";
+              context.fillRect(x + 4, y + 4, Math.max(0, obstacle.width - 10), 1);
+            }
           }
         }
 
@@ -1806,6 +1892,7 @@
           context.clearRect(0, 0, canvas.width, canvas.height);
           if (currentRoom === 1) {
             drawBackdrop();
+            drawDungeonGaps();
             for (let x = Math.floor(cameraX * 0.72 / 360) * 360 - 120; x < cameraX * 0.72 + canvas.width + 360; x += 360) {
               drawTorch(x + 120, 82 + ((x / 360) % 2) * 18, torchFrame + x / 360);
             }
@@ -1814,7 +1901,10 @@
             drawForestBackdrop(time);
           }
           platforms.forEach(drawPlatform);
-          if (currentRoom === 1) drawDoor();
+          if (currentRoom === 1) {
+            drawDungeonObstacles();
+            drawDoor();
+          }
           const nearby = nearbyChest();
           chests.forEach((chest) => drawChest(chest, chest === nearby));
           enemies.forEach((enemy) => drawEnemy(enemy, time));
