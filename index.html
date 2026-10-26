@@ -321,165 +321,6 @@
         text-align: right;
       }
 
-      .pixel-dialog {
-        width: min(430px, calc(100vw - 28px));
-        padding: 18px;
-        border: 4px solid var(--lime);
-        color: var(--text);
-        background: var(--panel);
-        box-shadow: 0 0 0 3px var(--ink), 7px 7px 0 var(--pink);
-        text-align: center;
-      }
-
-      .pixel-dialog::backdrop {
-        background: rgba(10, 8, 16, 0.78);
-        backdrop-filter: blur(3px);
-      }
-
-      .treasure-icon {
-        width: 42px;
-        height: 36px;
-        display: grid;
-        place-items: center;
-        margin: 0 auto 9px;
-        border: 2px solid var(--ink);
-        color: var(--ink);
-        background: var(--gold);
-        box-shadow: 3px 3px 0 var(--ink);
-        font-size: 1.25rem;
-      }
-
-      .door-dialog {
-        width: min(500px, calc(100vw - 28px));
-        text-align: left;
-      }
-
-      .door-progress {
-        margin: 0 0 8px;
-        color: var(--gold);
-        font-size: 0.62rem;
-        font-weight: 800;
-        letter-spacing: 0.11em;
-        text-transform: uppercase;
-      }
-
-      .door-question-title,
-      .door-complete h2 {
-        margin: 0 0 12px;
-        color: var(--text);
-        font-size: 0.83rem;
-        line-height: 1.5;
-        text-transform: uppercase;
-      }
-
-      .door-answers {
-        display: grid;
-        gap: 7px;
-      }
-
-      .door-answer {
-        min-height: 42px;
-        padding: 8px 10px;
-        border: 2px solid var(--line);
-        color: var(--text);
-        background: var(--night);
-        cursor: pointer;
-        font-size: 0.67rem;
-        line-height: 1.4;
-        text-align: left;
-      }
-
-      .door-answer:hover {
-        border-color: var(--blue);
-        background: var(--panel-light);
-      }
-
-      .door-answer.is-correct {
-        border-color: var(--lime);
-        color: var(--ink);
-        background: var(--lime);
-      }
-
-      .door-answer.is-wrong {
-        border-color: var(--pink);
-        color: var(--ink);
-        background: var(--pink);
-        animation: door-rattle 360ms ease-in-out;
-      }
-
-      .door-feedback {
-        min-height: 1.4em;
-        margin: 9px 0 0;
-        color: var(--pink);
-        font-size: 0.63rem;
-        font-weight: 700;
-        line-height: 1.45;
-      }
-
-      .door-feedback:empty {
-        visibility: hidden;
-      }
-
-      .door-feedback.is-success {
-        color: var(--lime);
-      }
-
-      .door-next,
-      .door-enter,
-      .door-exit {
-        min-height: 41px;
-        margin-top: 11px;
-        padding: 8px 11px;
-        border: 2px solid var(--ink);
-        cursor: pointer;
-        font-size: 0.62rem;
-        font-weight: 900;
-        line-height: 1.25;
-        text-transform: uppercase;
-      }
-
-      .door-next,
-      .door-enter {
-        color: var(--ink);
-        background: var(--lime);
-        box-shadow: 3px 3px 0 var(--ink);
-      }
-
-      .door-exit {
-        float: right;
-        color: var(--text);
-        background: transparent;
-      }
-
-      .door-complete p {
-        margin: 0;
-        color: var(--muted);
-        font-size: 0.68rem;
-        line-height: 1.55;
-      }
-
-      .door-complete h2 {
-        color: var(--lime);
-      }
-
-      .door-question-view[hidden],
-      .door-complete[hidden],
-      .door-next[hidden],
-      .door-exit[hidden] {
-        display: none;
-      }
-
-      .door-dialog.is-wrong {
-        animation: door-rattle 360ms ease-in-out;
-      }
-
-      @keyframes door-rattle {
-        0%, 100% { transform: translateX(0); }
-        25% { transform: translateX(-5px) rotate(-0.6deg); }
-        50% { transform: translateX(5px) rotate(0.6deg); }
-        75% { transform: translateX(-3px); }
-      }
-
       :focus-visible {
         outline: 3px solid var(--blue);
         outline-offset: 3px;
@@ -709,24 +550,6 @@
       </footer>
     </main>
 
-    <dialog class="pixel-dialog door-dialog" id="door-dialog" aria-labelledby="door-question-title">
-      <div class="treasure-icon" aria-hidden="true">▣</div>
-      <section class="door-question-view" id="door-question-view">
-        <p class="door-progress" id="door-progress">Pregunta 1 / 3</p>
-        <h2 class="door-question-title" id="door-question-title" tabindex="-1">El acertijo de la puerta</h2>
-        <div class="door-answers" id="door-answers" role="group" aria-labelledby="door-question-title"></div>
-        <p class="door-feedback" id="door-feedback" role="status" aria-live="polite"></p>
-        <button class="door-next" id="door-next" type="button" hidden></button>
-      </section>
-      <section class="door-complete" id="door-complete" aria-labelledby="door-complete-title" hidden>
-        <p class="door-progress">3 / 3 · puerta desbloqueada</p>
-        <h2 id="door-complete-title" tabindex="-1">¡Lo lograste!</h2>
-        <p>La puerta se abre y entra el sol. Al otro lado espera un bosque nuevo.</p>
-        <button class="door-enter" id="door-enter" type="button">Entrar a Sala 02 →</button>
-      </section>
-      <button class="door-exit" id="door-exit" type="button">Volver al juego</button>
-    </dialog>
-
     <script>
       (() => {
         const canvas = document.querySelector("#game");
@@ -736,16 +559,6 @@
         const roomLabel = document.querySelector("#room-label");
         const actionButton = document.querySelector("#open-chest");
         const jumpButton = document.querySelector("#jump-button");
-        const doorDialog = document.querySelector("#door-dialog");
-        const doorQuestionView = document.querySelector("#door-question-view");
-        const doorProgress = document.querySelector("#door-progress");
-        const doorQuestionTitle = document.querySelector("#door-question-title");
-        const doorAnswers = document.querySelector("#door-answers");
-        const doorFeedback = document.querySelector("#door-feedback");
-        const doorNext = document.querySelector("#door-next");
-        const doorComplete = document.querySelector("#door-complete");
-        const doorExit = document.querySelector("#door-exit");
-        const doorEnter = document.querySelector("#door-enter");
 
         const tile = 16;
         const worldWidth = 2240;
@@ -755,8 +568,10 @@
         const moveSpeed = 118;
         const jumpSpeed = 236;
         let currentRoom = 1;
-        let doorUnlocked = false;
-        let doorQuestionIndex = 0;
+        let doorTransitionPhase = "";
+        let doorTransitionElapsed = 0;
+        let doorOpenProgress = 0;
+        let transitionFlash = 0;
         const keyDirections = {
           arrowleft: "left", a: "left",
           arrowright: "right", d: "right",
@@ -825,26 +640,6 @@
             message: "¡Rescate completado! La princesa Rulos estaba bajo el gran roble, leyendo un mapa al revés. El reino celebra tu hazaña.",
           },
         ];
-        const doorQuestions = [
-          {
-            prompt: "¿Cuántos cofres hay en la Sala 01?",
-            answers: ["Tres", "Cinco", "Doce y medio"],
-            correct: 1,
-            miss: "¡El murciélago inspector pide revisar el marcador! Otra vez.",
-          },
-          {
-            prompt: "¿Qué controles hacen saltar al aventurero?",
-            answers: ["↑, W o espacio", "Solo la tecla E", "Soplarle al teléfono"],
-            correct: 0,
-            miss: "¡Esa tecla abre cofres! El murciélago te da otra oportunidad.",
-          },
-          {
-            prompt: "¿Quién se gastó el oro en galletas?",
-            answers: ["El dragón", "La ardilla", "El comité de ovejas"],
-            correct: 0,
-            miss: "¡El dragón presenta recibos! Revisa el expediente y prueba otra vez.",
-          },
-        ];
         let platforms = dungeonPlatforms;
         let chests = dungeonChests;
         const player = {
@@ -887,7 +682,7 @@
 
         function updateActionLabel() {
           if (isNearDoor()) {
-            actionButton.textContent = doorUnlocked ? "Entrar a Sala 02" : "Examinar puerta";
+            actionButton.textContent = doorTransitionPhase ? "Entrando..." : "Entrar a Sala 02";
           } else {
             actionButton.textContent = "Abrir cofre";
           }
@@ -896,9 +691,9 @@
         function updateHint() {
           updateActionLabel();
           if (isNearDoor()) {
-            setHint(doorUnlocked
-              ? "La puerta está abierta. Pulsa ABRIR para entrar al bosque."
-              : "Puerta cerrada: responde 3 preguntas para pasar a la Sala 02.");
+            setHint(doorTransitionPhase
+              ? "La puerta se abre. ¡Hacia el bosque!"
+              : "¡Llegaste a la puerta! Sigue avanzando para entrar.");
             return;
           }
           const chest = nearbyChest();
@@ -916,7 +711,7 @@
         }
 
         function jump() {
-          if (doorDialog.open || !player.onGround) return;
+          if (doorTransitionPhase || !player.onGround) return;
           player.velocityY = -jumpSpeed;
           player.onGround = false;
         }
@@ -938,7 +733,7 @@
         }
 
         function updatePhysics(deltaTime) {
-          if (doorDialog.open) return;
+          if (doorTransitionPhase) return;
           const axis = Number(heldDirections.has("right")) - Number(heldDirections.has("left"));
           player.velocityX = axis * moveSpeed;
           if (axis) player.facing = axis;
@@ -982,6 +777,7 @@
           const targetCamera = Math.max(0, Math.min(worldWidth - canvas.width, player.x - canvas.width * 0.38));
           cameraX += (targetCamera - cameraX) * Math.min(1, deltaTime * 9);
           updateHint();
+          if (currentRoom === 1 && axis > 0 && isNearDoor()) startDoorEntry();
         }
 
         function updateChestCount() {
@@ -991,7 +787,7 @@
         }
 
         function openNearbyChest() {
-          if (doorDialog.open) return;
+          if (doorTransitionPhase) return;
           const chest = nearbyChest();
           if (!chest) {
             setHint("Todavía no hay ningún cofre al alcance. Un pasito más.");
@@ -1013,77 +809,65 @@
           updateHint();
         }
 
-        function renderDoorQuestion() {
-          const question = doorQuestions[doorQuestionIndex];
-          doorProgress.textContent = `Pregunta ${doorQuestionIndex + 1} / ${doorQuestions.length}`;
-          doorQuestionTitle.textContent = question.prompt;
-          doorFeedback.textContent = "";
-          doorFeedback.className = "door-feedback";
-          doorNext.hidden = true;
-          doorAnswers.replaceChildren();
-          question.answers.forEach((answer, index) => {
-            const button = document.createElement("button");
-            button.className = "door-answer";
-            button.type = "button";
-            button.textContent = answer;
-            button.addEventListener("click", () => {
-              if (!doorNext.hidden) return;
-              if (index !== question.correct) {
-                doorDialog.classList.remove("is-wrong");
-                void doorDialog.offsetWidth;
-                doorDialog.classList.add("is-wrong");
-                button.classList.add("is-wrong");
-                doorFeedback.textContent = question.miss;
-                window.setTimeout(() => {
-                  doorDialog.classList.remove("is-wrong");
-                  button.classList.remove("is-wrong");
-                }, 400);
-                return;
-              }
-
-              doorAnswers.querySelectorAll("button").forEach((option) => {
-                option.disabled = true;
-              });
-              button.classList.add("is-correct");
-              doorFeedback.className = "door-feedback is-success";
-              doorFeedback.textContent = "¡Correcto! La cerradura hace clic.";
-
-              if (doorQuestionIndex < doorQuestions.length - 1) {
-                doorNext.textContent = "Siguiente pregunta →";
-                doorNext.hidden = false;
-                doorNext.focus({ preventScroll: true });
-              } else {
-                doorUnlocked = true;
-                updateHint();
-                doorQuestionView.hidden = true;
-                doorComplete.hidden = false;
-                doorExit.hidden = true;
-                doorDialog.setAttribute("aria-labelledby", "door-complete-title");
-                doorComplete.querySelector("h2").focus({ preventScroll: true });
-              }
-            });
-            doorAnswers.append(button);
-          });
+        function startDoorEntry() {
+          if (currentRoom !== 1 || doorTransitionPhase) return;
+          doorTransitionPhase = "opening";
+          doorTransitionElapsed = 0;
+          doorOpenProgress = 0;
+          transitionFlash = 0;
+          heldDirections.clear();
+          player.velocityX = 0;
+          player.velocityY = 0;
+          player.onGround = true;
+          player.y = floorY - player.height;
+          setHint("La puerta se abre. El caballero entra al bosque...");
+          updateActionLabel();
         }
 
-        function openDoorQuiz() {
-          if (doorUnlocked) {
-            enterForest();
+        function updateDoorTransition(deltaTime) {
+          doorTransitionElapsed += deltaTime;
+
+          if (doorTransitionPhase === "opening") {
+            doorOpenProgress = Math.min(1, doorTransitionElapsed / 0.38);
+            if (doorTransitionElapsed >= 0.38) {
+              doorTransitionPhase = "entering";
+              doorTransitionElapsed = 0;
+            }
             return;
           }
-          doorQuestionIndex = 0;
-          doorQuestionView.hidden = false;
-          doorComplete.hidden = true;
-          doorExit.hidden = false;
-          doorDialog.setAttribute("aria-labelledby", "door-question-title");
-          doorDialog.classList.remove("is-wrong");
-          renderDoorQuestion();
-          doorDialog.showModal();
-          doorQuestionTitle.focus({ preventScroll: true });
+
+          if (doorTransitionPhase === "entering") {
+            doorOpenProgress = 1;
+            player.x = Math.min(doorX + 10, player.x + 92 * deltaTime);
+            if (doorTransitionElapsed >= 0.42) {
+              doorTransitionPhase = "flash-out";
+              doorTransitionElapsed = 0;
+            }
+            return;
+          }
+
+          if (doorTransitionPhase === "flash-out") {
+            transitionFlash = Math.min(1, doorTransitionElapsed / 0.2);
+            if (transitionFlash >= 1) {
+              enterForest();
+              doorTransitionPhase = "flash-in";
+              doorTransitionElapsed = 0;
+              transitionFlash = 1;
+            }
+            return;
+          }
+
+          if (doorTransitionPhase === "flash-in") {
+            transitionFlash = Math.max(0, 1 - doorTransitionElapsed / 0.42);
+            if (transitionFlash <= 0) {
+              doorTransitionPhase = "";
+              doorOpenProgress = 0;
+              updateHint();
+            }
+          }
         }
 
         function enterForest() {
-          if (!doorUnlocked) return;
           currentRoom = 2;
           platforms = forestPlatforms;
           chests = forestChests;
@@ -1102,7 +886,7 @@
 
         function activateAction() {
           if (isNearDoor()) {
-            openDoorQuiz();
+            startDoorEntry();
             return;
           }
           openNearbyChest();
@@ -1304,21 +1088,26 @@
           context.fillRect(x + 6, y, 16, 5);
           context.fillRect(x + 2, y + 7, 3, 36);
           context.fillRect(x + 23, y + 7, 3, 36);
-          if (doorUnlocked) {
-            context.fillStyle = "#b9f28d";
-            context.fillRect(x + 7, y + 8, 14, 35);
-            context.fillStyle = "#fff0a0";
-            context.fillRect(x + 11, y + 13, 6, 25);
-            context.fillStyle = "#5e7c49";
-            context.fillRect(x + 7, y + 39, 14, 4);
-          } else {
-            context.fillStyle = "#67475b";
-            context.fillRect(x + 7, y + 8, 14, 35);
-            context.fillStyle = "#8e6070";
-            context.fillRect(x + 9, y + 11, 10, 29);
+          context.fillStyle = doorOpenProgress > 0 ? "#c9f7a4" : "#392b43";
+          context.fillRect(x + 5, y + 7, 18, 36);
+          if (doorOpenProgress > 0) {
+            context.fillStyle = `rgba(255, 239, 151, ${0.35 + doorOpenProgress * 0.65})`;
+            context.fillRect(x + 7, y + 10, 14, 31);
+            context.fillStyle = "#fff6c2";
+            context.fillRect(x + 11, y + 14, 6, 23);
+          }
+
+          const panelSlide = Math.round(doorOpenProgress * 9);
+          context.fillStyle = "#67475b";
+          context.fillRect(x + 5 - panelSlide, y + 7, 9, 36);
+          context.fillRect(x + 14 + panelSlide, y + 7, 9, 36);
+          context.fillStyle = "#8e6070";
+          context.fillRect(x + 7 - panelSlide, y + 11, 5, 28);
+          context.fillRect(x + 16 + panelSlide, y + 11, 5, 28);
+          if (doorOpenProgress < 0.5) {
             context.fillStyle = "#ffd66e";
-            context.fillRect(x + 16, y + 24, 2, 3);
-            context.fillRect(x + 12, y + 19, 8, 2);
+            context.fillRect(x + 11, y + 24, 2, 3);
+            context.fillRect(x + 8, y + 19, 8, 2);
           }
         }
 
@@ -1576,6 +1365,10 @@
           chests.forEach((chest) => {
             if (chest.opened && chest.displayMessage) drawMessageBubble(chest, chest.displayMessage);
           });
+          if (transitionFlash > 0) {
+            context.fillStyle = `rgba(255, 245, 201, ${transitionFlash})`;
+            context.fillRect(0, 0, canvas.width, canvas.height);
+          }
         }
 
         function beginDirection(direction) {
@@ -1631,26 +1424,11 @@
         });
         canvas.addEventListener("pointerdown", () => canvas.focus({ preventScroll: true }));
 
-        doorNext.addEventListener("click", () => {
-          if (doorQuestionIndex >= doorQuestions.length - 1) return;
-          doorQuestionIndex += 1;
-          renderDoorQuestion();
-          doorQuestionTitle.focus({ preventScroll: true });
-        });
-        doorExit.addEventListener("click", () => doorDialog.close());
-        doorEnter.addEventListener("click", () => {
-          doorDialog.close();
-          enterForest();
-        });
-        doorDialog.addEventListener("close", () => {
-          heldDirections.clear();
-          actionButton.focus({ preventScroll: true });
-        });
-
         function gameLoop(time) {
           const deltaTime = Math.min((time - lastFrame) / 1000, 0.04);
           lastFrame = time;
-          if (!doorDialog.open) updatePhysics(deltaTime);
+          if (doorTransitionPhase) updateDoorTransition(deltaTime);
+          else updatePhysics(deltaTime);
           drawScene(time);
           window.requestAnimationFrame(gameLoop);
         }
