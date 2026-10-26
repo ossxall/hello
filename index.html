@@ -633,6 +633,7 @@
         let swordSwingTimer = 0;
         let swordCooldown = 0;
         let swordHeld = false;
+        let swordSwingHitEnemies = new Set();
         let respawnTimer = 0;
         let combatHintTimer = 0;
         let combatHintText = "";
@@ -916,31 +917,43 @@
 
           swordSwingTimer = swordSwingDuration;
           swordCooldown = 0.5;
+          swordSwingHitEnemies.clear();
           if (!enemiesStarted || currentRoom !== 1) {
             setCombatHint("La espada corta el aire. Los enemigos aparecerán al abrir el cofre.", 1.4);
             return;
           }
-          let defeatedCount = 0;
-          const playerCenterX = player.x + player.width / 2;
-          const playerTop = player.y;
-          const playerBottom = player.y + player.height;
+          setCombatHint("¡Tajo!", 0.7);
+        }
 
+        function resolveSwordHits() {
+          if (swordSwingTimer <= 0 || currentRoom !== 1 || !enemiesStarted) return;
+          const progress = 1 - swordSwingTimer / swordSwingDuration;
+          const pose = swordSwingPose(progress);
+          if (pose.move !== "sweep") return;
+
+          const handX = player.x + player.width / 2 + player.facing * (3 + pose.handX);
+          const handY = player.y + player.height * 0.56 + pose.handY;
+          let defeatedCount = 0;
           for (const enemy of enemies) {
-            if (enemy.defeated) continue;
-            const distanceAhead = (enemy.x + enemy.width / 2 - playerCenterX) * player.facing;
-            const overlapsVertically = enemy.y < playerBottom + 4 && enemy.y + enemy.height > playerTop - 4;
-            if (distanceAhead >= -3 && distanceAhead <= 39 && overlapsVertically) {
-              enemy.defeated = true;
-              enemy.defeatTimer = 0.42;
-              defeatedCount += 1;
-            }
+            if (enemy.defeated || swordSwingHitEnemies.has(enemy)) continue;
+            const closestX = Math.max(enemy.x, Math.min(handX, enemy.x + enemy.width));
+            const closestY = Math.max(enemy.y, Math.min(handY, enemy.y + enemy.height));
+            const offsetX = closestX - handX;
+            const forwardDistance = offsetX * player.facing;
+            const distance = Math.hypot(offsetX, closestY - handY);
+            if (forwardDistance < -8 || forwardDistance > 48 || distance > 48) continue;
+
+            enemy.defeated = true;
+            enemy.defeatTimer = 0.42;
+            swordSwingHitEnemies.add(enemy);
+            defeatedCount += 1;
           }
 
-          setCombatHint(defeatedCount
-            ? defeatedCount === 1 ? "¡Buen golpe! Has derrotado a un monstruo." : `¡Buen golpe! Has derrotado a ${defeatedCount} monstruos.`
-            : enemies.some((enemy) => !enemy.defeated)
-              ? "¡Zas! Acércate a un enemigo y mira hacia él para golpearlo."
-              : "La espada corta el aire.", 1.8);
+          if (defeatedCount) {
+            setCombatHint(defeatedCount === 1
+              ? "¡Buen golpe! Has derrotado a un monstruo."
+              : `¡Buen golpe! Has derrotado a ${defeatedCount} monstruos.`, 1.8);
+          }
         }
 
         function updatePlayerEffects(deltaTime) {
@@ -2044,6 +2057,7 @@
           else {
             updatePhysics(deltaTime);
             if (swordHeld && swordCooldown <= 0) attackWithSword();
+            resolveSwordHits();
             updateEnemies(deltaTime);
           }
           drawScene(time);
