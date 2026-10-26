@@ -243,21 +243,6 @@
         transform: translate(2px, 2px);
       }
 
-      .action-button {
-        width: 100%;
-        min-height: 48px;
-        padding: 8px 6px;
-        border: 2px solid #0c0912;
-        color: var(--ink);
-        background: var(--pink);
-        box-shadow: 3px 3px 0 #0c0912;
-        cursor: pointer;
-        font-size: 0.63rem;
-        font-weight: 900;
-        line-height: 1.25;
-        text-transform: uppercase;
-      }
-
       .jump-button {
         width: 100%;
         min-height: 42px;
@@ -317,8 +302,6 @@
         transform: translate(2px, 2px);
       }
 
-      .action-button:hover,
-      .action-button:focus-visible,
       .sword-button:hover,
       .sword-button:focus-visible {
         background: var(--gold);
@@ -433,7 +416,7 @@
         }
 
         .control-stack {
-          grid-template-columns: auto repeat(3, minmax(0, 1fr));
+          grid-template-columns: auto repeat(2, minmax(0, 1fr));
           align-items: center;
           gap: 7px;
         }
@@ -448,8 +431,7 @@
         }
 
         .jump-button,
-        .sword-button,
-        .action-button {
+        .sword-button {
           min-height: 48px;
           padding-inline: 3px;
           font-size: 0.55rem;
@@ -491,7 +473,7 @@
         }
 
         .control-stack {
-          grid-template-columns: auto repeat(3, minmax(0, 1fr));
+          grid-template-columns: auto repeat(2, minmax(0, 1fr));
           gap: 5px;
         }
 
@@ -583,7 +565,6 @@
                 <path d="M12 19V5"/>
               </svg>
             </button>
-            <button class="action-button" id="open-chest" type="button">ABRIR</button>
             <button class="sword-button" id="sword-button" type="button" aria-label="Atacar con la espada">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                 <path d="m11 19-6-6"/>
@@ -593,12 +574,12 @@
               </svg>
             </button>
           </div>
-          <p class="control-help">← / → o A / D: moverse<br>↑ / W / espacio: saltar<br>F: espada · E: abrir cofre</p>
+          <p class="control-help">← / → o A / D: moverse<br>↑ / W / espacio: saltar<br>F: espada · los cofres se abren al acercarte</p>
         </section>
       </section>
 
       <footer class="game-footer">
-        <p class="game-hint" id="game-hint" role="status" aria-live="polite">← → para moverte · ↑ o espacio para saltar · acércate y abre un cofre.</p>
+        <p class="game-hint" id="game-hint" role="status" aria-live="polite">← → para moverte · ↑ o espacio para saltar · los cofres se abren al acercarte.</p>
         <p class="keyboard-hint">Sin cronómetro · sin puntuación secreta</p>
       </footer>
     </main>
@@ -614,7 +595,6 @@
         const hint = document.querySelector("#game-hint");
         const chestCount = document.querySelector("#chest-count");
         const roomLabel = document.querySelector("#room-label");
-        const actionButton = document.querySelector("#open-chest");
         const jumpButton = document.querySelector("#jump-button");
         const swordButton = document.querySelector("#sword-button");
 
@@ -753,16 +733,7 @@
             && Math.abs(player.y + player.height - floorY) <= 24;
         }
 
-        function updateActionLabel() {
-          if (isNearDoor()) {
-            actionButton.textContent = doorTransitionPhase ? "Entrando..." : "Entrar a Sala 02";
-          } else {
-            actionButton.textContent = "ABRIR";
-          }
-        }
-
         function updateHint() {
-          updateActionLabel();
           if (combatHintTimer > 0) {
             setHint(combatHintText);
             return;
@@ -776,8 +747,8 @@
           const chest = nearbyChest();
           if (chest && !chest.opened) {
             setHint(chest === dungeonChests[0] && currentRoom === 1
-              ? "El primer cofre sella el camino. Ábrelo para poder avanzar."
-              : "¡Cofre a tiro! Pulsa ABRIR o E.");
+              ? "El primer cofre sella el camino. Acércate para abrirlo."
+              : "¡Cofre cerca! Se abrirá automáticamente.");
           } else if (chest?.opened) {
             setHint("Cofre abierto. Su mensaje se queda aquí; puedes seguir avanzando.");
           } else {
@@ -855,6 +826,8 @@
 
           const targetCamera = Math.max(0, Math.min(worldWidth - canvas.width, player.x - canvas.width * 0.38));
           cameraX += (targetCamera - cameraX) * Math.min(1, deltaTime * 9);
+          const chestToOpen = nearbyChest();
+          if (chestToOpen && !chestToOpen.opened) openNearbyChest();
           updateHint();
           if (currentRoom === 1 && axis > 0 && isNearDoor()) startDoorEntry();
         }
@@ -1031,7 +1004,6 @@
           player.onGround = true;
           player.y = floorY - player.height;
           setHint("La puerta se abre. El caballero entra al bosque...");
-          updateActionLabel();
         }
 
         function updateDoorTransition(deltaTime) {
@@ -1098,14 +1070,6 @@
           roomLabel.textContent = "02";
           updateChestCount();
           updateHint();
-        }
-
-        function activateAction() {
-          if (isNearDoor()) {
-            startDoorEntry();
-            return;
-          }
-          openNearbyChest();
         }
 
         function drawBackdrop() {
@@ -1767,7 +1731,7 @@
             beginDirection(direction);
             return;
           }
-          if (jumpKeys.has(key) && event.target !== jumpButton && event.target !== actionButton && event.target !== swordButton) {
+          if (jumpKeys.has(key) && event.target !== jumpButton && event.target !== swordButton) {
             event.preventDefault();
             if (!event.repeat) jump();
             return;
@@ -1777,10 +1741,6 @@
             if (!event.repeat) attackWithSword();
             return;
           }
-          if (["e", "enter"].includes(key) && event.target === canvas) {
-            event.preventDefault();
-            activateAction();
-          }
         });
 
         window.addEventListener("keyup", (event) => {
@@ -1789,7 +1749,6 @@
         });
 
         window.addEventListener("blur", () => heldDirections.clear());
-        actionButton.addEventListener("click", activateAction);
         swordButton.addEventListener("click", attackWithSword);
         jumpButton.addEventListener("click", jump);
         jumpButton.addEventListener("pointerdown", (event) => {
