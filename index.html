@@ -284,6 +284,9 @@
         font-weight: 900;
         line-height: 1.25;
         text-transform: uppercase;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
       }
 
       .sword-button svg {
@@ -606,7 +609,7 @@
         const gravity = 560;
         const moveSpeed = 118;
         const jumpSpeed = 236;
-        const swordSwingDuration = 0.32;
+        const swordSwingDuration = 0.44;
         let currentRoom = 1;
         let doorTransitionPhase = "";
         let doorTransitionElapsed = 0;
@@ -616,6 +619,7 @@
         let enemies = [];
         let swordSwingTimer = 0;
         let swordCooldown = 0;
+        let swordHeld = false;
         let combatHintTimer = 0;
         let combatHintText = "";
         let hurtTimer = 0;
@@ -873,7 +877,7 @@
           if (swordCooldown > 0) return;
 
           swordSwingTimer = swordSwingDuration;
-          swordCooldown = 0.34;
+          swordCooldown = 0.5;
           if (!enemiesStarted || currentRoom !== 1) {
             setCombatHint("La espada corta el aire.", 0.9);
             return;
@@ -1551,16 +1555,36 @@
           gameContext.restore();
         }
 
+        function swordSwingPose(progress) {
+          const sweepEnd = 0.36;
+          const startAngle = -1.25;
+          const endAngle = 1.25;
+          const ease = (value) => value * value * (3 - 2 * value);
+
+          if (progress < sweepEnd) {
+            const phase = progress / sweepEnd;
+            return {
+              angle: startAngle + (endAngle - startAngle) * ease(phase),
+              sweepProgress: phase,
+              move: "sweep",
+            };
+          }
+          const recovery = ease((progress - sweepEnd) / (1 - sweepEnd));
+          return {
+            angle: endAngle + (0.15 - endAngle) * recovery,
+            move: "recover",
+          };
+        }
+
         function drawSwingingSword(progress) {
-          const easedProgress = progress * progress * (3 - 2 * progress);
-          const angle = -1.1 + easedProgress * 2.9;
+          const pose = swordSwingPose(progress);
           const handX = player.x - cameraX + player.width / 2 + player.facing * 3;
           const handY = player.y + player.height * 0.56;
 
           context.save();
           context.translate(handX, handY);
           context.scale(player.facing, 1);
-          context.rotate(angle);
+          context.rotate(pose.angle);
 
           const blade = context.createLinearGradient(-2, 0, 2, 0);
           blade.addColorStop(0, "#8393a5");
@@ -1709,26 +1733,29 @@
         function drawCombatEffects(time) {
           if (swordSwingTimer > 0) {
             const progress = 1 - swordSwingTimer / swordSwingDuration;
-            const alpha = Math.sin(progress * Math.PI);
+            const pose = swordSwingPose(progress);
             const centerX = player.x - cameraX + player.width / 2 + player.facing * 3;
-            const centerY = player.y + player.height / 2;
-            const swingAngle = -1.3 + progress * 2.6;
-            context.save();
-            context.globalAlpha = alpha;
-            context.translate(centerX, centerY);
-            context.scale(player.facing, 1);
-            context.beginPath();
-            context.arc(0, 0, 24, swingAngle - 0.36, swingAngle + 0.36);
-            context.strokeStyle = "#fff4b0";
-            context.lineWidth = 3;
-            context.lineCap = "round";
-            context.stroke();
-            context.beginPath();
-            context.arc(0, 0, 27, swingAngle - 0.27, swingAngle + 0.27);
-            context.strokeStyle = "#ff788e";
-            context.lineWidth = 1;
-            context.stroke();
-            context.restore();
+            const centerY = player.y + player.height * 0.56;
+            if (pose.move === "sweep" && pose.sweepProgress > 0) {
+              const arcEnd = -1.28 + pose.sweepProgress * 2.56;
+              context.save();
+              context.translate(centerX, centerY);
+              context.scale(player.facing, 1);
+              context.beginPath();
+              context.arc(0, 0, 25, -1.28, arcEnd);
+              context.globalAlpha = 0.22;
+              context.strokeStyle = "#aebdcb";
+              context.lineWidth = 5;
+              context.lineCap = "round";
+              context.stroke();
+              context.beginPath();
+              context.arc(0, 0, 25, -1.28, arcEnd);
+              context.globalAlpha = 0.72;
+              context.strokeStyle = "#fff4b0";
+              context.lineWidth = 1.6;
+              context.stroke();
+              context.restore();
+            }
             drawSwingingSword(progress);
           }
 
@@ -1815,18 +1842,37 @@
           }
           if (key === "f") {
             event.preventDefault();
+            swordHeld = true;
             if (!event.repeat) attackWithSword();
             return;
           }
         });
 
         window.addEventListener("keyup", (event) => {
-          const direction = keyDirections[event.key.toLowerCase()];
+          const key = event.key.toLowerCase();
+          const direction = keyDirections[key];
           if (direction) endDirection(direction);
+          if (key === "f") swordHeld = false;
         });
 
-        window.addEventListener("blur", () => heldDirections.clear());
-        swordButton.addEventListener("click", attackWithSword);
+        window.addEventListener("blur", () => {
+          heldDirections.clear();
+          swordHeld = false;
+        });
+        swordButton.addEventListener("pointerdown", (event) => {
+          event.preventDefault();
+          swordButton.setPointerCapture(event.pointerId);
+          swordHeld = true;
+          attackWithSword();
+        });
+        ["pointerup", "pointercancel", "lostpointercapture"].forEach((eventName) => {
+          swordButton.addEventListener(eventName, () => {
+            swordHeld = false;
+          });
+        });
+        swordButton.addEventListener("click", (event) => {
+          if (event.detail === 0) attackWithSword();
+        });
         jumpButton.addEventListener("click", jump);
         jumpButton.addEventListener("pointerdown", (event) => {
           event.preventDefault();
@@ -1841,6 +1887,7 @@
           if (doorTransitionPhase) updateDoorTransition(deltaTime);
           else {
             updatePhysics(deltaTime);
+            if (swordHeld && swordCooldown <= 0) attackWithSword();
             updateEnemies(deltaTime);
           }
           drawScene(time);
