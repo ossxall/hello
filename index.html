@@ -835,7 +835,7 @@
         const jumpSpeed = 236;
         const swordSwingDuration = 0.44;
         const respawnDuration = 0.58;
-        const princessFinalLineMinimumDuration = 2000;
+        const princessFinalLineMinimumDuration = 1000;
         const endingApproachSpeed = 90;
         const endingWalkSpeed = 64;
         const endingWalkDistance = 300;
@@ -1089,7 +1089,7 @@
           }
 
           if (endingPhase === "takingLead") {
-            const leadPositionX = princess.x + princess.width + 2;
+            const leadPositionX = princess.x + princess.width - 3;
             const distance = leadPositionX - player.x;
             const step = Math.min(distance, endingWalkSpeed * deltaTime);
             player.x += step;
@@ -1989,22 +1989,6 @@
             context.fillStyle = "#674638";
             context.fillRect(blockX, floorY + 7, 1, canvas.height - floorY - 7);
           }
-        }
-
-        function drawJoinedHands() {
-          if (endingPhase !== "holding" && endingPhase !== "walking") return;
-          const knightIsLeading = endingPhase === "walking" && player.x > princess.x;
-          const knightHandX = Math.round(player.x - cameraX + (knightIsLeading ? 5 : 18));
-          const princessHandX = Math.round(princess.x - cameraX + (knightIsLeading ? 22 : 5));
-          const handY = floorY - 9;
-          context.strokeStyle = "#f2c397";
-          context.lineWidth = 2;
-          context.beginPath();
-          context.moveTo(knightHandX, handY);
-          context.lineTo(princessHandX, handY);
-          context.stroke();
-          context.fillStyle = "#fff0ce";
-          context.fillRect(Math.round((knightHandX + princessHandX) / 2) - 1, handY - 1, 3, 3);
         }
 
         function drawEndScreen() {
@@ -3406,11 +3390,20 @@
           context.lineWidth = 3;
           context.lineCap = "round";
           context.beginPath();
-          context.moveTo(8, 20);
-          context.lineTo(4, 27);
-          context.lineTo(5, 31 + wave);
-          context.moveTo(18, 20);
-          context.lineTo(22, 25 - wave);
+          if (walkingProfile) {
+            context.moveTo(8, 20);
+            context.lineTo(6, 25 + walkBob);
+            context.lineTo(8, 30 + walkBob);
+            context.moveTo(18, 20);
+            context.lineTo(20, 25 - walkBob);
+            context.lineTo(18, 30 - walkBob);
+          } else {
+            context.moveTo(8, 20);
+            context.lineTo(4, 27);
+            context.lineTo(5, 31 + wave);
+            context.moveTo(18, 20);
+            context.lineTo(22, 25 - wave);
+          }
           context.stroke();
           context.fillStyle = "#efbd98";
           if (walkingProfile) {
@@ -3596,7 +3589,6 @@
           }
           drawRespawnEffect(time);
           drawPlayer(time);
-          drawJoinedHands();
           drawCombatEffects(time);
           chests.forEach((chest) => {
             if (chest.opened && chest.displayMessage) drawMessageBubble(chest, chest.displayMessage);
