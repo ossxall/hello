@@ -1081,10 +1081,25 @@
           if (endingPhase === "holding") {
             endingElapsed += deltaTime;
             if (endingElapsed >= 0.55) {
-              endingPhase = "walking";
-              endingWalkStartX = princess.x;
+              endingPhase = "takingLead";
               heldDirections.add("right");
-              setHint("Juntos, caminan hacia el este...");
+              setHint("El caballero toma la delantera y guía a la princesa...");
+            }
+            return;
+          }
+
+          if (endingPhase === "takingLead") {
+            const leadPositionX = princess.x + princess.width + 2;
+            const distance = leadPositionX - player.x;
+            const step = Math.min(distance, endingWalkSpeed * deltaTime);
+            player.x += step;
+            player.steps += step;
+            player.facing = 1;
+            if (player.x >= leadPositionX - 0.01) {
+              player.x = leadPositionX;
+              endingPhase = "walking";
+              endingWalkStartX = player.x;
+              setHint("El caballero guía a la princesa hacia el este...");
             }
             return;
           }
@@ -1095,9 +1110,9 @@
             player.x += step;
             player.steps += step;
             player.facing = 1;
-            const targetCamera = Math.max(0, princess.x - canvas.width * 0.58);
+            const targetCamera = Math.max(0, player.x - canvas.width * 0.58);
             cameraX += (targetCamera - cameraX) * Math.min(1, deltaTime * 5);
-            if (princess.x - endingWalkStartX >= endingWalkDistance) {
+            if (player.x - endingWalkStartX >= endingWalkDistance) {
               endingPhase = "complete";
               heldDirections.clear();
               setHint("Fin · Autor: https://github.com/ossxall");
@@ -1978,8 +1993,9 @@
 
         function drawJoinedHands() {
           if (endingPhase !== "holding" && endingPhase !== "walking") return;
-          const knightHandX = Math.round(player.x - cameraX + 18);
-          const princessHandX = Math.round(princess.x - cameraX + 5);
+          const knightIsLeading = endingPhase === "walking" && player.x > princess.x;
+          const knightHandX = Math.round(player.x - cameraX + (knightIsLeading ? 5 : 18));
+          const princessHandX = Math.round(princess.x - cameraX + (knightIsLeading ? 22 : 5));
           const handY = floorY - 9;
           context.strokeStyle = "#f2c397";
           context.lineWidth = 2;
